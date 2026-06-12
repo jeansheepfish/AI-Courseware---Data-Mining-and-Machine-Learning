@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>数据挖掘概述 — 高中AI课堂</title>
+<style>
+:root{
+  --blue:#2563eb;--blue-light:#dbeafe;--green:#16a34a;--green-light:#dcfce7;
+  --orange:#ea580c;--orange-light:#fff7ed;--red:#dc2626;--red-light:#fef2f2;
+  --purple:#7c3aed;--purple-light:#f5f3ff;--teal:#0d9488;--teal-light:#ccfbf1;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+  --gray-600:#4b5563;--gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;
+  --sidebar-w:260px;--font-xl:32px;--font-lg:22px;--font-md:18px;--font-sm:15px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;background:var(--gray-50);color:var(--gray-800);display:flex;height:100vh;overflow:hidden;font-size:var(--font-md);line-height:1.7}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:linear-gradient(180deg,#0f172a 0%,#1e3a5f 100%);color:#fff;display:flex;flex-direction:column;z-index:10;box-shadow:4px 0 20px rgba(0,0,0,0.15)}
+.sidebar-header{padding:28px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.12)}
+.sidebar-header h1{font-size:19px;font-weight:700}
+.sidebar-header .subtitle{font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0}
+.nav-section{margin-bottom:4px}
+.nav-section-title{padding:10px 20px 4px;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,0.4);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;transition:all .2s;border-left:3px solid transparent;font-size:14px;color:rgba(255,255,255,0.75);user-select:none}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,0.12);border-left-color:#60a5fa;color:#fff;font-weight:600}
+.nav-item .icon{width:20px;text-align:center;font-size:15px;flex-shrink:0}
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,0.12);font-size:12px;color:rgba(255,255,255,0.35)}
+.main{flex:1;overflow-y:auto;padding:0;scroll-behavior:smooth}
+.slide{display:none;min-height:100vh;padding:48px 56px 40px;animation:fadeSlideIn .4s ease}
+.slide.active{display:block}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.cover{flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 50%,#2563eb 100%)}
+.slide.active.cover{display:flex}
+.cover-icon{font-size:80px;margin-bottom:20px}
+.cover h1{font-size:48px;font-weight:800;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,0.3)}
+.cover .tagline{font-size:var(--font-lg);color:rgba(255,255,255,0.75);margin-top:12px;max-width:630px}
+.cover .meta{margin-top:32px;display:flex;gap:24px;font-size:15px;color:rgba(255,255,255,0.7)}
+.cover .meta span{background:rgba(255,255,255,0.12);padding:6px 16px;border-radius:20px}
+.cover .start-btn{margin-top:36px;padding:14px 40px;font-size:19px;font-weight:600;background:#fff;color:#1e3a5f;border:none;border-radius:12px;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(0,0,0,0.25)}
+.cover .start-btn:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.4)}
+.section-title{font-size:var(--font-xl);font-weight:700;color:var(--gray-900);margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.section-title .num{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;font-size:20px;font-weight:700;flex-shrink:0}
+.num.blue{background:var(--blue-light);color:var(--blue)}.num.green{background:var(--green-light);color:var(--green)}
+.num.orange{background:var(--orange-light);color:var(--orange)}.num.purple{background:var(--purple-light);color:var(--purple)}
+.num.red{background:var(--red-light);color:var(--red)}.num.teal{background:var(--teal-light);color:var(--teal)}
+.section-subtitle{font-size:16px;color:var(--gray-600);margin-bottom:28px}
+.content-block{margin-bottom:26px}
+.content-block h3{font-size:var(--font-lg);font-weight:700;color:var(--gray-800);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gray-200)}
+.content-block p{margin-bottom:10px;color:var(--gray-700)}
+.card-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-bottom:24px}
+.card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);transition:all .2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.1);transform:translateY(-2px)}
+.card .card-icon{font-size:36px;margin-bottom:10px}
+.card h4{font-size:var(--font-lg);font-weight:700;margin-bottom:6px}
+.card p{font-size:var(--font-sm);color:var(--gray-600);line-height:1.6}
+.callout{padding:18px 22px;border-radius:12px;margin-bottom:20px;font-size:var(--font-md);border-left:5px solid}
+.callout.info{background:var(--blue-light);border-color:var(--blue);color:#1e40af}
+.callout.success{background:var(--green-light);border-color:var(--green);color:#166534}
+.callout.warning{background:var(--orange-light);border-color:var(--orange);color:#9a3412}
+.callout.danger{background:var(--red-light);border-color:var(--red);color:#991b1b}
+.callout strong{display:block;margin-bottom:4px;font-size:var(--font-lg)}
+.img-container{margin:24px 0;text-align:center;background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200)}
+.img-container img{max-width:100%;height:auto;border-radius:8px}
+.img-container .caption{margin-top:10px;font-size:var(--font-sm);color:var(--gray-600);font-style:italic}
+.quiz-block{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);margin-bottom:24px}
+.quiz-block h3{margin-bottom:16px;font-size:var(--font-lg)}
+.quiz-question{font-size:var(--font-md);font-weight:600;margin-bottom:12px}
+.quiz-options{display:flex;flex-direction:column;gap:8px}
+.quiz-option{padding:12px 18px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;transition:all .2s;user-select:none}
+.quiz-option:hover{border-color:var(--blue);background:#f8faff}
+.quiz-option.correct{border-color:var(--green);background:var(--green-light);font-weight:600}
+.quiz-option.wrong{border-color:var(--red);background:var(--red-light)}
+.quiz-feedback{margin-top:12px;padding:10px 16px;border-radius:8px;display:none;font-size:var(--font-sm)}
+.quiz-feedback.show{display:block}
+.data-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:var(--font-sm);background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.data-table th{background:var(--blue);color:#fff;padding:12px 14px;text-align:center;font-weight:600}
+.data-table td{padding:10px 14px;text-align:center;border-bottom:1px solid var(--gray-200)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .highlight{font-weight:700;background:var(--blue-light)}
+.progress-bar{position:fixed;top:0;left:var(--sidebar-w);right:0;height:4px;background:var(--gray-200);z-index:20}
+.progress-fill{height:100%;background:var(--blue);transition:width .3s;border-radius:0 2px 2px 0}
+.bottom-nav{display:flex;justify-content:space-between;margin-top:40px;padding-top:20px;border-top:1px solid var(--gray-200)}
+.bottom-nav button{padding:10px 24px;font-size:var(--font-md);font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all .2s}
+.btn-prev{background:var(--gray-100);color:var(--gray-700)}.btn-prev:hover{background:var(--gray-200)}
+.btn-next{background:var(--blue);color:#fff}.btn-next:hover{background:#1d4ed8}
+.tag{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-right:4px}
+.tag.blue{background:var(--blue-light);color:var(--blue)}.tag.green{background:var(--green-light);color:var(--green)}
+.tag.orange{background:var(--orange-light);color:var(--orange)}.tag.red{background:var(--red-light);color:var(--red)}
+.tag.purple{background:var(--purple-light);color:var(--purple)}
+.formula-box{background:#1e293b;color:#e2e8f0;padding:16px 24px;border-radius:10px;font-family:"SF Mono","Consolas","Courier New",monospace;font-size:15px;text-align:center;margin-bottom:20px}
+.flow-chart{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:20px;background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:24px}
+.flow-step{padding:12px 18px;border-radius:10px;font-weight:600;font-size:14px;text-align:center}
+.flow-arrow{font-size:22px;color:var(--gray-400)}
+.compare-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.compare-col{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200)}
+.compare-col h4{text-align:center;margin-bottom:14px;font-size:var(--font-lg)}
+.timeline{position:relative;padding-left:40px;margin-bottom:24px}
+.timeline-item{position:relative;padding:14px 20px;margin-bottom:8px;background:#fff;border-radius:10px;border-left:4px solid var(--blue);box-shadow:0 1px 3px rgba(0,0,0,0.04)}
+.timeline-item .year{font-weight:700;color:var(--blue)}
+.three-col{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:24px}
+@media(max-width:900px){.sidebar{width:200px;min-width:200px}:root{--sidebar-w:200px}.slide{padding:32px 24px 28px}.cover h1{font-size:36px}.section-title{font-size:24px}.compare-row,.three-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+<aside class="sidebar">
+  <div class="sidebar-header"><h1>数据挖掘概述</h1><div class="subtitle">高中AI课堂 · 80分钟课件</div></div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section"><div class="nav-section-title">课程导航</div><div class="nav-item active" data-slide="0"><span class="icon">🏠</span> 封面</div></div>
+    <div class="nav-section"><div class="nav-section-title">背景与概念</div>
+      <div class="nav-item" data-slide="1"><span class="icon">🚀</span> 背景与动机</div>
+      <div class="nav-item" data-slide="2"><span class="icon">🎯</span> 核心概念·AI/ML/DM</div>
+      <div class="nav-item" data-slide="3"><span class="icon">📜</span> 发展简史</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">经典案例与流程</div>
+      <div class="nav-item" data-slide="4"><span class="icon">📖</span> 三大经典案例</div>
+      <div class="nav-item" data-slide="5"><span class="icon">🔄</span> CRISP-DM 方法论</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">技术与数据</div>
+      <div class="nav-item" data-slide="6"><span class="icon">🧭</span> 技术分类·数据4V</div>
+      <div class="nav-item" data-slide="7"><span class="icon">🤖</span> AI编程工具</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">实战与总结</div>
+      <div class="nav-item" data-slide="8"><span class="icon">🧪</span> 实验：数据探索</div>
+      <div class="nav-item" data-slide="9"><span class="icon">🏁</span> 课程总结</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">QoderWork · 高中AI课堂</div>
+</aside>
+
+<main class="main" id="mainContent">
+
+<!-- Slide 0 -->
+<section class="slide active cover" id="slide0">
+  <div class="cover-icon">📊</div>
+  <h1>数据挖掘概述</h1>
+  <p class="tagline">从数据到知识，从知识到决策——走进人工智能与数据科学的世界</p>
+  <div class="meta"><span>📚 高中AI课堂</span><span>⏱️ 80分钟</span><span>🎯 适合投屏教学</span></div>
+  <button class="start-btn" onclick="goToSlide(1)">开始学习 →</button>
+</section>
+
+<!-- Slide 1: 背景与动机 -->
+<section class="slide" id="slide1">
+  <div class="section-title"><span class="num blue">1</span> 背景与动机：我们为什么需要数据挖掘？</div>
+  <div class="section-subtitle">数据爆炸 + 技术进步 + 应用需求——三股力量推动了数据挖掘的诞生</div>
+
+  <div class="card-row">
+    <div class="card" style="border-top:3px solid var(--red);"><div class="card-icon">💥</div><h4>数据爆炸</h4><p>全球每天产生约 <strong>328.77 EB</strong> 数据（1 EB = 10亿 GB）。微信每天发送 450 亿条消息，淘宝每秒处理数万笔交易。数据量已经大到人类无法手动分析了。</p></div>
+    <div class="card" style="border-top:3px solid var(--blue);"><div class="card-icon">⚙️</div><h4>技术推动</h4><p>存储成本大幅下降（1TB硬盘不到300元）、计算能力指数增长（GPU/TPU）、分布式计算框架成熟（Hadoop/Spark）——"算得起"也"存得下"了。</p></div>
+    <div class="card" style="border-top:3px solid var(--green);"><div class="card-icon">🎯</div><h4>应用需求</h4><p>企业渴望从数据中洞察客户行为、优化运营、预测趋势。数据不再是"成本中心"而是"利润中心"——数据驱动的决策正在取代直觉驱动的决策。</p></div>
+  </div>
+
+  <div class="callout info"><strong>核心矛盾</strong>我们被数据淹没，却渴望知识。数据挖掘就是解决这个矛盾的桥梁——<em>"从海量数据中自动发现隐藏的、有价值的模式和规律。"</em></div>
+
+  <div class="content-block"><h3>2025年全球数据量</h3></div>
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--red-light);color:var(--red);">2010年<br>2 ZB</div><div class="flow-arrow">→→→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">2018年<br>33 ZB</div><div class="flow-arrow">→→→</div>
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">2025年<br>181 ZB</div><div class="flow-arrow">→→→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">2030年<br>预计 600+ ZB</div>
+  </div>
+  <p style="text-align:center;font-size:13px;color:var(--gray-600);">1 ZB = 1万亿 GB，相当于约 2500 亿部高清电影</p>
+</section>
+
+<!-- Slide 2: 核心概念 -->
+<section class="slide" id="slide2">
+  <div class="section-title"><span class="num blue">2</span> AI · ML · DM：三个易混淆的概念</div>
+  <div class="section-subtitle">它们不是同义词——理解"谁包含谁"是建立知识框架的第一步</div>
+
+  <div class="img-container">
+    <img src="images/relationship.png" alt="AI ML DM 关系图" loading="lazy">
+    <div class="caption">图：AI ⊃ ML ⊃ DM——从大到小的三层包含关系</div>
+  </div>
+
+  <div class="card-row">
+    <div class="card" style="border-left:4px solid var(--purple);"><h4>人工智能 AI</h4><p><strong>最外层</strong>——让机器表现出智能行为的总称。包括推理、规划、自然语言处理、计算机视觉、机器人等。目标是"让机器像人一样思考和行动"。</p><p style="margin-top:6px;"><span class="tag purple">1956年达特茅斯会议正式提出</span></p></div>
+    <div class="card" style="border-left:4px solid var(--blue);"><h4>机器学习 ML</h4><p><strong>中间层</strong>——AI 的子领域，专注于让机器<strong>从数据中学习</strong>规律，而不需要显式编程。包含分类、回归、聚类、强化学习等。</p><p style="margin-top:6px;"><span class="tag blue">1980s 开始蓬勃发展</span></p></div>
+    <div class="card" style="border-left:4px solid var(--green);"><h4>数据挖掘 DM</h4><p><strong>最内层</strong>——ML 的实际应用分支，强调从<strong>大规模真实数据</strong>中发现隐藏模式。更关注商业价值、工程流程（如CRISP-DM）、数据质量。</p><p style="margin-top:6px;"><span class="tag green">1990s 随大数据兴起</span></p></div>
+  </div>
+
+  <div class="callout success"><strong>一句话区分</strong>AI 是"梦想"（让机器变聪明），ML 是"方法"（从数据中学），DM 是"实践"（从真实大数据中挖出商业价值）。一个人的数据挖掘项目，同时在做 AI 和 ML。</div>
+</section>
+
+<!-- Slide 3: 发展简史 -->
+<section class="slide" id="slide3">
+  <div class="section-title"><span class="num blue">3</span> 数据挖掘发展简史</div>
+  <div class="section-subtitle">从统计学走向AI——一场持续了半个多世纪的技术演进</div>
+
+  <div class="timeline">
+    <div class="timeline-item"><span class="year">1950s</span> — 人工智能诞生。图灵测试、Dartmouth会议。计算机科学家开始思考"机器能否思考？"</div>
+    <div class="timeline-item"><span class="year">1960s-70s</span> — 统计方法奠基。贝叶斯定理、回归分析、聚类算法在学术界发展成熟。数据库技术出现。</div>
+    <div class="timeline-item"><span class="year">1980s</span> — 机器学习兴起。决策树（ID3/C4.5）、神经网络（反向传播算法）被发明。专家系统热潮。</div>
+    <div class="timeline-item"><span class="year">1990s</span> — 数据挖掘正式登场。"Data Mining"术语流行。关联规则（Apriori 1994）、KDD会议创立。企业开始重视数据资产。</div>
+    <div class="timeline-item"><span class="year">2000s</span> — 大数据时代。Hadoop、MapReduce出现。互联网公司积累海量数据。CRISP-DM成为标准流程。</div>
+    <div class="timeline-item"><span class="year">2010s</span> — 深度学习革命。AlexNet（2012）、AlphaGo（2016）、GPT系列。GPU让训练大数据+大模型成为可能。</div>
+    <div class="timeline-item"><span class="year">2020s-今</span> — 大模型时代。ChatGPT、编程助手CodeBuddy。AI从"专用工具"走向"通用助手"。数据挖掘的重点从"建模"转向"数据+特征+业务理解"。</div>
+  </div>
+
+  <div class="quiz-block"><h3>🧠 课堂小测</h3>
+    <div class="quiz-question">数据挖掘（DM）、机器学习（ML）、人工智能（AI）三者的关系是？</div>
+    <div class="quiz-options" id="quiz1">
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">A. DM = ML = AI，三个词可以互换使用</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">B. DM ⊃ ML ⊃ AI，数据挖掘最大</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,true)">C. AI ⊃ ML ⊃ DM，人工智能包含机器学习，机器学习包含数据挖掘</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">D. 三者完全不同，没有任何关系</div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-fb"></div>
+  </div>
+</section>
+
+<!-- Slide 4: 经典案例 -->
+<section class="slide" id="slide4">
+  <div class="section-title"><span class="num orange">4</span> 三大经典案例：数据挖掘改变商业的故事</div>
+  <div class="section-subtitle">这些不是教科书里的虚构案例——它们真实发生过，并改变了行业</div>
+
+  <div class="img-container">
+    <img src="images/classic_cases.png" alt="三大经典案例" loading="lazy">
+    <div class="caption">图：塔吉特怀孕预测、啤酒+尿布、U型曲线——数据挖掘三大经典</div>
+  </div>
+
+  <div class="card-row">
+    <div class="card" style="border-top:3px solid var(--red);"><div class="card-icon">🎯</div><h4>塔吉特 Target：比父亲更早知道女儿怀孕</h4><p>美国零售巨头塔吉特通过分析顾客的<strong>购买记录变化</strong>（从普通乳液切换到无香味乳液、开始购买维生素补充剂等），建立了"怀孕预测模型"。一位父亲收到婴儿用品优惠券后愤怒投诉，几天后才发现女儿确实怀孕了——模型比他更早知道。</p><p style="font-size:13px;color:var(--gray-600);margin-top:6px;">💡 启示：看似无关的购物行为背后隐藏着深刻的<strong>生活事件模式</strong>。</p></div>
+    <div class="card" style="border-top:3px solid var(--orange);"><div class="card-icon">🍺</div><h4>啤酒+尿布：关联规则的开端</h4><p>沃尔玛分析POS交易数据时发现：<strong>周五傍晚</strong>，啤酒和尿布经常出现在同一张购物小票上。原因是年轻爸爸们被派去买尿布时，顺手给自己犒劳一箱啤酒。沃尔玛据此调整了货架布局。</p><p style="font-size:13px;color:var(--gray-600);margin-top:6px;">💡 启示：数据能发现<strong>人类直觉想不到</strong>的关联——这正是关联规则的价值。</p></div>
+    <div class="card" style="border-top:3px solid var(--blue);"><div class="card-icon">📉</div><h4>U型曲线：模型不是越复杂越好</h4><p>在机器学习中，模型复杂度与预测误差呈<strong>U型关系</strong>：太简单的模型欠拟合（高偏差），太复杂的模型过拟合（高方差）。最优的模型在U型曲线的谷底——"刚刚好"的复杂度。</p><p style="font-size:13px;color:var(--gray-600);margin-top:6px;">💡 启示：更多的参数、更深的网络<strong>不一定</strong>带来更好的效果。简单模型 + 好特征常常胜过复杂模型 + 差特征。</p></div>
+  </div>
+
+  <div class="callout warning"><strong>数据伦理警示</strong>塔吉特案例也引发了隐私争议——企业在没有告知用户的情况下推断出如此私密的信息，是否越界？这提醒我们：<strong>数据挖掘的能力越大，数据伦理的责任也越大。</strong></div>
+</section>
+
+<!-- Slide 5: CRISP-DM -->
+<section class="slide" id="slide5">
+  <div class="section-title"><span class="num green">5</span> CRISP-DM：数据挖掘的"标准操作流程"</div>
+  <div class="section-subtitle">不是拿到数据就建模——业界公认的六阶段方法论</div>
+
+  <div class="img-container">
+    <img src="images/crispdm.png" alt="CRISP-DM方法论" loading="lazy">
+    <div class="caption">图：CRISP-DM 六阶段循环——从业务理解到部署的完整闭环</div>
+  </div>
+
+  <div class="card-row">
+    <div class="card" style="border-left:4px solid var(--blue);"><h4>① 业务理解</h4><p>明确要解决什么问题、成功标准是什么。这是<strong>最重要</strong>的一步——方向错了，后面全白做。</p><p style="font-size:13px;color:var(--gray-600);">例：目标不是"建一个准确率最高的模型"，而是"找出最可能流失的客户，把流失率降低10%"。d</p></div>
+    <div class="card" style="border-left:4px solid var(--green);"><h4>② 数据理解</h4><p>收集数据、描述性统计、数据质量检查。数据在哪？够不够？脏不脏？有没有系统性偏差？</p><p style="font-size:13px;color:var(--gray-600);">工具：describe()、info()、可视化分布图。</p></div>
+    <div class="card" style="border-left:4px solid var(--orange);"><h4>③ 数据准备</h4><p>清洗、变换、特征工程。填缺失值、标准化、编码、构造新特征。通常占整个项目<strong>60%-80%</strong>的时间。</p></div>
+    <div class="card" style="border-left:4px solid var(--red);"><h4>④ 建模</h4><p>选择算法、训练、调参。模型训练本身只占<strong>10%-20%</strong>的时间——前面数据准备好了，这步很快。</p></div>
+    <div class="card" style="border-left:4px solid var(--purple);"><h4>⑤ 评估</h4><p>模型效果是否达到了业务目标？混淆矩阵、准确率/精确率/召回率、与基线对比。不达标就<strong>回到前面</strong>迭代。</p></div>
+    <div class="card" style="border-left:4px solid var(--teal);"><h4>⑥ 部署</h4><p>模型上线、监控效果、定期更新。部署不是结束——模型会"老化"，需要持续维护和迭代。</p></div>
+  </div>
+
+  <div class="callout success"><strong>CRISP-DM 的精髓</strong>六个阶段之间的箭头是<strong>双向的</strong>——它是一个不断迭代的循环。评估不过关就回到数据准备；部署后发现效果下降就回到建模；业务需求变了就回到业务理解。数据挖掘不是一次性工程，是持续优化的过程。</div>
+</section>
+
+<!-- Slide 6: 技术分类 + 数据4V -->
+<section class="slide" id="slide6">
+  <div class="section-title"><span class="num purple">6</span> 技术分类与大数据的"4V"特征</div>
+  <div class="section-subtitle">三种学习范式 + 四维度理解大数据</div>
+
+  <div class="img-container">
+    <img src="images/paradigms.png" alt="三种学习范式对比" loading="lazy">
+    <div class="caption">图：监督学习、无监督学习、强化学习——三种范式的核心区别</div>
+  </div>
+
+  <div class="content-block"><h3>三种学习范式</h3></div>
+  <div class="three-col">
+    <div class="card" style="border-top:3px solid var(--blue);"><h4>监督学习</h4><p style="font-size:14px;">数据有标签，目标：学会从特征到标签的映射</p><p style="font-size:13px;color:var(--gray-600);">分类：垃圾邮件检测<br>回归：房价预测</p></div>
+    <div class="card" style="border-top:3px solid var(--green);"><h4>无监督学习</h4><p style="font-size:14px;">数据无标签，目标：发现数据的内在结构</p><p style="font-size:13px;color:var(--gray-600);">聚类：客户分群<br>关联：购物篮分析<br>降维：PCA</p></div>
+    <div class="card" style="border-top:3px solid var(--orange);"><h4>强化学习</h4><p style="font-size:14px;">智能体与环境交互，通过奖励/惩罚试错学习</p><p style="font-size:13px;color:var(--gray-600);">AlphaGo、自动驾驶<br>游戏AI、机器人控制</p></div>
+  </div>
+
+  <div class="content-block"><h3>大数据的"4V"特征</h3></div>
+  <div class="card-row">
+    <div class="card"><h4>Volume 量大</h4><p>数据体量巨大——TB、PB甚至EB级别。传统数据库无法处理，需要分布式存储和计算。</p></div>
+    <div class="card"><h4>Velocity 速度快</h4><p>数据产生和流入的速度极快——社交媒体实时更新、传感器每秒百万条、交易系统毫秒级响应。</p></div>
+    <div class="card"><h4>Variety 多样</h4><p>数据形式多样——<strong>结构化</strong>（数据库表格）、<strong>半结构化</strong>（JSON/XML）、<strong>非结构化</strong>（文本/图片/视频/语音）。</p></div>
+    <div class="card"><h4>Value 价值密度低</h4><p>大量数据中真正有价值的信息可能只占很小比例。数据挖掘的任务就是从"沙子里淘金"。</p></div>
+  </div>
+
+  <div class="quiz-block"><h3>🧠 课堂小测</h3>
+    <div class="quiz-question">客户分群（将客户自动分成几类）属于哪种学习范式？</div>
+    <div class="quiz-options" id="quiz2">
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">A. 监督学习——因为最终会给每类客户命名</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,true)">B. 无监督学习——因为事先没有标签，算法自己发现分组</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">C. 强化学习——因为客户群体会随时间变化</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">D. 半监督学习——因为部分客户有标签</div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-fb"></div>
+  </div>
+</section>
+
+<!-- Slide 7: AI编程工具 -->
+<section class="slide" id="slide7">
+  <div class="section-title"><span class="num teal">7</span> AI 编程工具：让数据挖掘更高效</div>
+  <div class="section-subtitle">现代数据科学家不再从零写代码——AI助手大幅提升了生产力</div>
+
+  <div class="card-row">
+    <div class="card" style="border-top:3px solid var(--blue);"><div class="card-icon">💻</div><h4>CodeBuddy</h4><p>AI 智能编程助手，能在 IDE 中<strong>实时补全代码、解释代码逻辑、生成单元测试、Debug</strong>。支持 Python、Java、JavaScript 等主流语言。</p><p style="font-size:13px;color:var(--gray-600);margin-top:6px;">场景：写数据清洗代码时，输入注释描述需求，CodeBuddy 自动生成对应的 Python 代码。</p></div>
+    <div class="card" style="border-top:3px solid var(--green);"><div class="card-icon">🤖</div><h4>WorkBuddy</h4><p>AI 工作助手——你的桌面级智能代理。能<strong>读写文件、执行命令、搜索信息、创建文档</strong>，像一个全能的<strong>AI实习生</strong>帮你完成各类任务。</p><p style="font-size:13px;color:var(--gray-600);margin-top:6px;">场景：让 WorkBuddy 帮你整理数据文件、写分析报告、生成可视化图表。</p></div>
+    <div class="card" style="border-top:3px solid var(--purple);"><div class="card-icon">📚</div><h4>IMA</h4><p>智能知识库与文档助手——帮助你<strong>快速检索、整理和理解</strong>技术文档、论文、代码库。让"查资料"不再浪费时间。</p><p style="font-size:13px;color:var(--gray-600);margin-top:6px;">场景：遇到不熟悉的算法时，让 IMA 快速找到并总结相关文档的核心要点。</p></div>
+  </div>
+
+  <div class="callout info"><strong>工具定位与关系</strong>CodeBuddy（编码助手）+ WorkBuddy（工作助手）+ IMA（知识助手）构成了一个完整的<strong>AI辅助数据挖掘工作流</strong>：IMA 帮你理解业务和算法 → CodeBuddy 帮你写代码和调试 → WorkBuddy 帮你运行和交付成果。这三者不是竞争关系，而是互补关系。</div>
+
+  <div class="content-block"><h3>一个典型的AI辅助数据挖掘工作流</h3></div>
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">IMA<br><small>理解业务<br>查算法文档</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">CodeBuddy<br><small>写数据清洗<br>特征工程代码</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">CodeBuddy<br><small>训练模型<br>调参·评估</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">WorkBuddy<br><small>生成报告<br>交付成果</small></div>
+  </div>
+</section>
+
+<!-- Slide 8: 实验 -->
+<section class="slide" id="slide8">
+  <div class="section-title"><span class="num red">8</span> 动手实验：从数据到洞察</div>
+  <div class="section-subtitle">跟着走一遍——用 Python 完成一个最简数据挖掘流程</div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">① 读入数据<br><small>pandas.read_csv()</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">② 描述统计<br><small>describe() / info()</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">③ 可视化<br><small>直方图/散点图/热力图</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">④ 基线回归<br><small>LinearRegression→R²</small></div>
+  </div>
+
+  <div class="content-block"><h3>示例数据：学生成绩影响因素</h3></div>
+  <table class="data-table">
+    <thead><tr><th>学生ID</th><th>学习时间(h)</th><th>睡眠时间(h)</th><th>作业完成率</th><th>出勤率</th><th>期末成绩</th></tr></thead>
+    <tbody>
+      <tr><td>001</td><td>8.5</td><td>7.0</td><td>95%</td><td>98%</td><td>88</td></tr>
+      <tr><td>002</td><td>3.2</td><td>5.5</td><td>60%</td><td>75%</td><td>62</td></tr>
+      <tr><td>003</td><td>6.0</td><td>8.0</td><td>85%</td><td>90%</td><td>78</td></tr>
+      <tr><td>004</td><td>10.0</td><td>6.0</td><td>98%</td><td>100%</td><td>95</td></tr>
+      <tr><td>005</td><td>2.0</td><td>9.0</td><td>40%</td><td>60%</td><td>45</td></tr>
+      <tr><td>006</td><td>7.5</td><td>7.5</td><td>90%</td><td>95%</td><td>85</td></tr>
+    </tbody>
+  </table>
+
+  <div class="content-block"><h3>关键发现</h3>
+  <p>① <strong>describe()</strong> 揭示了数据的中心趋势和离散程度——学习时间均值 6.2h，标准差 3.1h（差异较大）。② <strong>相关性热力图</strong>显示学习时间与期末成绩相关系数 0.82（强正相关），而睡眠时间与成绩相关系数仅 0.15（弱相关）。③ <strong>散点图</strong>发现学习时间 vs 成绩呈近似线性关系，但作业完成率 > 85% 之后，成绩的提升趋于平缓。④ <strong>基线线性回归</strong>仅用学习时间一个特征预测成绩，R² = 0.67——说明学习时间能解释 67% 的成绩变异，还有 33% 来自其他因素。</p>
+  </div>
+
+  <div class="callout success"><strong>实验收获</strong>这四步构成了数据挖掘的最小闭环：读数据→看分布→画图找规律→建基线模型。即使是最简单的线性回归，R²=0.67 已经告诉我们"学习时间确实很重要"——数据挖掘的价值，就体现在这种从"我感觉"到"数据说"的转变中。</div>
+</section>
+
+<!-- Slide 9: 总结 -->
+<section class="slide" id="slide9">
+  <div class="section-title"><span class="num purple">🏁</span> 课程总结</div>
+  <div class="section-subtitle">回顾这80分钟：从"为什么需要数据挖掘"到"亲手跑通一条数据挖掘流程"</div>
+
+  <div style="background:#fff;border-radius:14px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);margin-bottom:20px;">
+    <div style="font-size:var(--font-md);line-height:2.2;">
+      <p><strong>🚀 背景与动机</strong> → 数据爆炸(181ZB/2025) + 技术推动(GPU/云) + 商业需求 → 数据挖掘应运而生</p>
+      <p style="margin-left:20px;">↳ <strong>🎯 核心概念</strong> → AI ⊃ ML ⊃ DM → 1956年AI诞生→1980s ML→1990s DM→2020s大模型时代</p>
+      <p style="margin-left:40px;">↳ <strong>📖 三大经典</strong> → 塔吉特(预测怀孕) · 啤酒尿布(关联规则) · U型曲线(偏差方差权衡)</p>
+      <p style="margin-left:60px;">↳ <strong>🔄 CRISP-DM</strong> → 业务理解→数据理解→数据准备→建模→评估→部署 → 迭代循环</p>
+      <p style="margin-left:80px;">↳ <strong>🧭 技术全景</strong> → 监督/无监督/强化 · 结构化/非结构化 · 4V(量/速/多样/价值)</p>
+      <p style="margin-left:100px;">↳ <strong>🤖 AI工具链</strong> → IMA(知识) + CodeBuddy(编码) + WorkBuddy(工作) → 全流程辅助</p>
+      <p style="margin-left:120px;">↳ <strong>🧪 动手实验</strong> → 读入→描述→可视化→基线回归 → R²=0.67 → 数据说话</p>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <strong>四个核心收获</strong>
+    <p style="margin-top:8px;">1. 数据挖掘不是"用算法跑数据"——它是一个从<strong>业务理解到部署监控</strong>的系统工程，CRISP-DM 六阶段方法论是业界实战的结晶。</p>
+    <p>2. AI、ML、DM 三者不是同义词——AI 是梦想，ML 是方法，DM 是将 ML 方法应用于真实大数据的工程实践。</p>
+    <p>3. 数据挖掘的三大经典案例告诉我们：看似无关的数据背后有深刻的模式，模型不是越复杂越好，<strong>数据+特征 > 算法</strong>。</p>
+    <p>4. 现代数据挖掘有了 AI 工具的加持——IMA 帮理解、CodeBuddy 帮编码、WorkBuddy 帮交付——但<strong>业务理解和批判性思维</strong>仍然是人类不可替代的核心能力。</p>
+  </div>
+
+  <div class="callout info" style="text-align:center;">
+    <strong>🎉 恭喜完成本次课程！</strong><br>
+    这是「高中AI课堂」系列的开篇——从全局视角建立数据挖掘的认知框架。后续课程将逐一深入：分类与决策树、贝叶斯与神经网络、聚类分析、关联规则挖掘、特征工程……每个主题背后，都离不开今天学到的这些基础概念。希望这80分钟帮你建立了"数据挖掘是什么、为什么、怎么做"的完整认知地图。
+  </div>
+</section>
+
+</main>
+
+<script>
+var totalSlides=10,slideIds=[],currentSlide=0;
+for(var i=0;i<totalSlides;i++)slideIds.push('slide'+i);
+function goToSlide(index){
+  slideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active')});
+  var target=document.getElementById('slide'+index);
+  if(target)target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(item){item.classList.remove('active');if(parseInt(item.dataset.slide)===index)item.classList.add('active')});
+  document.getElementById('progressFill').style.width=(index/(totalSlides-1)*100)+'%';
+  document.getElementById('mainContent').scrollTop=0;
+  currentSlide=index;
+}
+document.querySelectorAll('.nav-item').forEach(function(item){item.addEventListener('click',function(){goToSlide(parseInt(this.dataset.slide))})});
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '){e.preventDefault();if(currentSlide<totalSlides-1)goToSlide(currentSlide+1)}
+  else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();if(currentSlide>0)goToSlide(currentSlide-1)}
+  else if(e.key==='Home'){e.preventDefault();goToSlide(0)}
+  else if(e.key==='End'){e.preventDefault();goToSlide(totalSlides-1)}
+});
+slideIds.forEach(function(id,idx){
+  if(idx===0)return;
+  var slide=document.getElementById(id);
+  if(!slide)return;
+  var nav=document.createElement('div');
+  nav.className='bottom-nav';
+  nav.innerHTML='<button class="btn-prev" onclick="goToSlide('+(idx-1)+')">← 上一页</button><span style="font-size:14px;color:var(--gray-600);align-self:center;">'+idx+' / '+(totalSlides-1)+'</span><button class="btn-next" onclick="goToSlide('+(idx+1)+')">'+(idx<totalSlides-1?'下一页 →':'回到封面 🏠')+'</button>';
+  slide.appendChild(nav);
+});
+function checkQuiz(quizId,optionEl,isCorrect){
+  var quiz=document.getElementById(quizId),fb=document.getElementById(quizId+'-fb');
+  quiz.querySelectorAll('.quiz-option').forEach(function(opt){opt.classList.remove('correct','wrong')});
+  var msgs={
+    'quiz1':{correct:'✅ 正确！AI(人工智能)是最大的范畴，ML(机器学习)是实现AI的重要方法，DM(数据挖掘)是ML在真实大数据上的应用实践。',wrong:'❌ 再想想。三者是包含关系：AI ⊃ ML ⊃ DM。数据挖掘是机器学习的一个应用分支。'},
+    'quiz2':{correct:'✅ 正确！客户分群不需要事先标注好的标签——算法根据客户的特征相似度自动发现分组，是无监督学习的典型应用。',wrong:'❌ 再想想。客户分群时你并没有事先告诉模型"这个客户属于A类"，而是让模型自己发现自然形成的分组——这就是无监督学习。'}
+  };
+  if(isCorrect){optionEl.classList.add('correct');fb.className='quiz-feedback show';fb.style.background='var(--green-light)';fb.style.color='#166534';fb.textContent=msgs[quizId].correct}
+  else{optionEl.classList.add('wrong');fb.className='quiz-feedback show';fb.style.background='var(--red-light)';fb.style.color='#991b1b';fb.textContent=msgs[quizId].wrong}
+}
+goToSlide(0);
+</script>
+</body>
+</html>

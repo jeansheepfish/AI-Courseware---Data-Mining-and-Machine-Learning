@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>特征工程与数据预处理 — 高中AI课堂</title>
+<style>
+:root{
+  --blue:#2563eb;--blue-light:#dbeafe;--green:#16a34a;--green-light:#dcfce7;
+  --orange:#ea580c;--orange-light:#fff7ed;--red:#dc2626;--red-light:#fef2f2;
+  --purple:#7c3aed;--purple-light:#f5f3ff;--teal:#0d9488;--teal-light:#ccfbf1;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+  --gray-600:#4b5563;--gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;
+  --sidebar-w:260px;--font-xl:32px;--font-lg:22px;--font-md:18px;--font-sm:15px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;background:var(--gray-50);color:var(--gray-800);display:flex;height:100vh;overflow:hidden;font-size:var(--font-md);line-height:1.7}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:linear-gradient(180deg,#1e3a5f 0%,#0f172a 100%);color:#fff;display:flex;flex-direction:column;z-index:10;box-shadow:4px 0 20px rgba(0,0,0,0.15)}
+.sidebar-header{padding:28px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.12)}
+.sidebar-header h1{font-size:19px;font-weight:700;letter-spacing:.5px}
+.sidebar-header .subtitle{font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0}
+.nav-section{margin-bottom:4px}
+.nav-section-title{padding:10px 20px 4px;font-size:11px;letter-spacing:2px;color:rgba(255,255,255,0.4);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 20px;cursor:pointer;transition:all .2s;border-left:3px solid transparent;font-size:14px;color:rgba(255,255,255,0.75);user-select:none}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,0.12);border-left-color:#60a5fa;color:#fff;font-weight:600}
+.nav-item .icon{width:20px;text-align:center;font-size:15px;flex-shrink:0}
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,0.12);font-size:12px;color:rgba(255,255,255,0.35)}
+.main{flex:1;overflow-y:auto;padding:0;scroll-behavior:smooth}
+.slide{display:none;min-height:100vh;padding:48px 56px 40px;animation:fadeSlideIn .4s ease}
+.slide.active{display:block}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.cover{flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#eff6ff 0%,#f5f3ff 40%,#f0fdf4 100%);min-height:100vh}
+.slide.active.cover{display:flex}
+.cover-icon{font-size:80px;margin-bottom:20px}
+.cover h1{font-size:42px;font-weight:800;background:linear-gradient(135deg,#1e3a5f,#7c3aed);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.cover .tagline{font-size:var(--font-lg);color:var(--gray-600);margin-top:12px;max-width:650px}
+.cover .meta{margin-top:32px;display:flex;gap:24px;font-size:15px;color:var(--gray-600)}
+.cover .meta span{background:#fff;padding:6px 16px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.cover .start-btn{margin-top:36px;padding:14px 40px;font-size:19px;font-weight:600;background:var(--purple);color:#fff;border:none;border-radius:12px;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(124,58,237,0.35)}
+.cover .start-btn:hover{background:#6d28d9;transform:translateY(-2px);box-shadow:0 6px 20px rgba(124,58,237,0.45)}
+.section-title{font-size:var(--font-xl);font-weight:700;color:var(--gray-900);margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.section-title .num{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;font-size:20px;font-weight:700;flex-shrink:0}
+.num.blue{background:var(--blue-light);color:var(--blue)}.num.green{background:var(--green-light);color:var(--green)}
+.num.orange{background:var(--orange-light);color:var(--orange)}.num.purple{background:var(--purple-light);color:var(--purple)}
+.num.red{background:var(--red-light);color:var(--red)}.num.teal{background:var(--teal-light);color:var(--teal)}
+.section-subtitle{font-size:16px;color:var(--gray-600);margin-bottom:28px}
+.content-block{margin-bottom:26px}
+.content-block h3{font-size:var(--font-lg);font-weight:700;color:var(--gray-800);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gray-200)}
+.content-block p{margin-bottom:10px;color:var(--gray-700)}
+.card-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-bottom:24px}
+.card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);transition:all .2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.1);transform:translateY(-2px)}
+.card .card-icon{font-size:36px;margin-bottom:10px}
+.card h4{font-size:var(--font-lg);font-weight:700;margin-bottom:6px}
+.card p{font-size:var(--font-sm);color:var(--gray-600);line-height:1.6}
+.callout{padding:18px 22px;border-radius:12px;margin-bottom:20px;font-size:var(--font-md);border-left:5px solid}
+.callout.info{background:var(--blue-light);border-color:var(--blue);color:#1e40af}
+.callout.success{background:var(--green-light);border-color:var(--green);color:#166534}
+.callout.warning{background:var(--orange-light);border-color:var(--orange);color:#9a3412}
+.callout.danger{background:var(--red-light);border-color:var(--red);color:#991b1b}
+.callout strong{display:block;margin-bottom:4px;font-size:var(--font-lg)}
+.img-container{margin:24px 0;text-align:center;background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200)}
+.img-container img{max-width:100%;height:auto;border-radius:8px}
+.img-container .caption{margin-top:10px;font-size:var(--font-sm);color:var(--gray-600);font-style:italic}
+.quiz-block{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);margin-bottom:24px}
+.quiz-block h3{margin-bottom:16px;font-size:var(--font-lg)}
+.quiz-question{font-size:var(--font-md);font-weight:600;margin-bottom:12px}
+.quiz-options{display:flex;flex-direction:column;gap:8px}
+.quiz-option{padding:12px 18px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;transition:all .2s;user-select:none}
+.quiz-option:hover{border-color:var(--purple);background:#faf8ff}
+.quiz-option.correct{border-color:var(--green);background:var(--green-light);font-weight:600}
+.quiz-option.wrong{border-color:var(--red);background:var(--red-light)}
+.quiz-feedback{margin-top:12px;padding:10px 16px;border-radius:8px;display:none;font-size:var(--font-sm)}
+.quiz-feedback.show{display:block}
+.data-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:var(--font-sm);background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.data-table th{background:var(--purple);color:#fff;padding:12px 14px;text-align:center;font-weight:600}
+.data-table td{padding:10px 14px;text-align:center;border-bottom:1px solid var(--gray-200)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .highlight{font-weight:700;background:var(--purple-light)}
+.progress-bar{position:fixed;top:0;left:var(--sidebar-w);right:0;height:4px;background:var(--gray-200);z-index:20}
+.progress-fill{height:100%;background:var(--purple);transition:width .3s;border-radius:0 2px 2px 0}
+.bottom-nav{display:flex;justify-content:space-between;margin-top:40px;padding-top:20px;border-top:1px solid var(--gray-200)}
+.bottom-nav button{padding:10px 24px;font-size:var(--font-md);font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all .2s}
+.btn-prev{background:var(--gray-100);color:var(--gray-700)}.btn-prev:hover{background:var(--gray-200)}
+.btn-next{background:var(--purple);color:#fff}.btn-next:hover{background:#6d28d9}
+.tag{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-right:4px}
+.tag.blue{background:var(--blue-light);color:var(--blue)}.tag.green{background:var(--green-light);color:var(--green)}
+.tag.orange{background:var(--orange-light);color:var(--orange)}.tag.red{background:var(--red-light);color:var(--red)}
+.tag.purple{background:var(--purple-light);color:var(--purple)}
+.formula-box{background:#1e293b;color:#e2e8f0;padding:16px 24px;border-radius:10px;font-family:"SF Mono","Consolas","Courier New",monospace;font-size:15px;text-align:center;margin-bottom:20px;letter-spacing:1px}
+.flow-chart{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding:20px;background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:24px}
+.flow-step{padding:12px 18px;border-radius:10px;font-weight:600;font-size:14px;text-align:center}
+.flow-arrow{font-size:22px;color:var(--gray-400)}
+.compare-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.compare-col{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200)}
+.compare-col h4{text-align:center;margin-bottom:14px;font-size:var(--font-lg)}
+.process-stack{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;max-width:700px;margin-left:auto;margin-right:auto}
+.process-row{display:flex;align-items:center;gap:14px;padding:12px 20px;border-radius:10px;font-weight:600}
+@media(max-width:900px){.sidebar{width:200px;min-width:200px}:root{--sidebar-w:200px}.slide{padding:32px 24px 28px}.cover h1{font-size:36px}.section-title{font-size:24px}.compare-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+<aside class="sidebar">
+  <div class="sidebar-header"><h1>特征工程与数据预处理</h1><div class="subtitle">高中AI课堂 · 80分钟课件</div></div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section"><div class="nav-section-title">课程导航</div><div class="nav-item active" data-slide="0"><span class="icon">🏠</span> 封面</div></div>
+    <div class="nav-section"><div class="nav-section-title">引子</div>
+      <div class="nav-item" data-slide="1"><span class="icon">💡</span> 为什么数据要先"洗干净"？</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">① 基础预处理</div>
+      <div class="nav-item" data-slide="2"><span class="icon">🕳️</span> 缺失值处理</div>
+      <div class="nav-item" data-slide="3"><span class="icon">📏</span> 数值缩放</div>
+      <div class="nav-item" data-slide="4"><span class="icon">🏷️</span> 类别编码 One-Hot</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">② 特征构造</div>
+      <div class="nav-item" data-slide="5"><span class="icon">🧱</span> 四则·分箱·交叉·时间</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">③ 特征选择</div>
+      <div class="nav-item" data-slide="6"><span class="icon">🔍</span> 过滤·包装·嵌入</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">④ 降维</div>
+      <div class="nav-item" data-slide="7"><span class="icon">📉</span> PCA·t-SNE·LDA</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">收尾</div>
+      <div class="nav-item" data-slide="8"><span class="icon">🗺️</span> 全流程串联</div>
+      <div class="nav-item" data-slide="9"><span class="icon">🏁</span> 课程总结</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">QoderWork · 高中AI课堂</div>
+</aside>
+
+<main class="main" id="mainContent">
+
+<!-- Slide 0 -->
+<section class="slide active cover" id="slide0">
+  <div class="cover-icon">🧹</div>
+  <h1>特征工程与数据预处理</h1>
+  <p class="tagline">算法只占20%，数据准备占80%——"垃圾进，垃圾出"是机器学习的第一定律</p>
+  <div class="meta"><span>📚 高中AI课堂</span><span>⏱️ 80分钟</span><span>🎯 适合投屏教学</span></div>
+  <button class="start-btn" onclick="goToSlide(1)">开始学习 →</button>
+</section>
+
+<!-- Slide 1: 引子 -->
+<section class="slide" id="slide1">
+  <div class="section-title"><span class="num purple">引</span> 为什么数据要先"洗干净"？</div>
+  <div class="section-subtitle">在机器学习中，数据质量直接决定模型的上限——算法只是在逼近这个上限</div>
+
+  <div class="content-block">
+    <h3>一个让你警醒的对比</h3>
+    <p>假设你要训练一个客户价值预测模型。A 组用精心清洗、构造了 15 个高质量特征的数据，配合简单的决策树；B 组用原始脏数据（缺失值、未标准化、无特征工程），配合最先进的深度学习模型。猜猜谁赢了？</p>
+    <p><strong>答案：A 组几乎总是赢。</strong>这就是为什么业界有句名言：<em>"数据和特征决定了机器学习的上限，而模型和算法只是在逼近这个上限而已。"</em></p>
+  </div>
+
+  <div class="process-stack">
+    <div class="process-row" style="background:var(--red-light);color:var(--red);"><span style="font-size:24px;">①</span> 基础预处理：缺失值、标准化、编码 —— 让数据"能跑"</div>
+    <div class="process-row" style="background:var(--orange-light);color:var(--orange);"><span style="font-size:24px;">②</span> 特征构造：四则运算、分箱、交叉 —— 注入业务知识</div>
+    <div class="process-row" style="background:var(--blue-light);color:var(--blue);"><span style="font-size:24px;">③</span> 特征选择：过滤、包装、嵌入 —— 去噪去冗余</div>
+    <div class="process-row" style="background:var(--purple-light);color:var(--purple);"><span style="font-size:24px;">④</span> 降维：PCA、t-SNE、LDA —— 压缩维度、可视化</div>
+  </div>
+
+  <div class="callout info"><strong>四步递进关系</strong>① 是底线——不做连模型都跑不起来。② 是增值——好的特征比好的算法更管用。③ 是瘦身——去掉噪音和冗余让模型更稳定更快。④ 是进阶——高维数据需要降维才能可视化或避免维度灾难。</div>
+</section>
+
+<!-- Slide 2: 缺失值 -->
+<section class="slide" id="slide2">
+  <div class="section-title"><span class="num red">2</span> 缺失值处理：空白的格子怎么办？</div>
+  <div class="section-subtitle">现实中数据从来不是完美的——传感器坏了、用户没填、系统迁移丢了字段</div>
+
+  <div class="img-container">
+    <img src="images/preprocessing.png" alt="数据预处理三大技术" loading="lazy">
+    <div class="caption">图：基础预处理的三大核心技术——缺失值处理、数值缩放、类别编码</div>
+  </div>
+
+  <div class="card-row">
+    <div class="card" style="border-left:4px solid var(--red);"><h4>① 直接删除</h4><p>如果缺失比例很低（<1%），直接删掉这些行或列，简单粗暴但有效。但如果缺失比例高或样本本来就少，删除会损失宝贵数据。<br><span style="font-size:13px;">适用：缺失极少的场景</span></p></div>
+    <div class="card" style="border-left:4px solid var(--orange);"><h4>② 填充固定值</h4><p>用<strong>均值、中位数、众数</strong>或一个特殊值（如-1）填充。最常用、最安全的方法。中位数对异常值更稳健。<br><span style="font-size:13px;">适用：大多数场景的默认选择</span></p></div>
+    <div class="card" style="border-left:4px solid var(--blue);"><h4>③ 模型预测填充</h4><p>用其他特征作为输入，训练一个小模型来预测缺失值（如 KNN 插补、回归插补）。更精确但计算开销大。<br><span style="font-size:13px;">适用：缺失有规律、对精度要求高</span></p></div>
+    <div class="card" style="border-left:4px solid var(--green);"><h4>④ 保留缺失信号</h4><p>有时"缺失"本身就是一种信息。比如用户没填收入，可能意味着ta不愿透露——这本身就是一个特征。可以额外创建一个"是否缺失"的01列。<br><span style="font-size:13px;">适用：缺失本身可能有业务含义</span></p></div>
+  </div>
+
+  <div class="callout warning"><strong>重要原则</strong>不管你用什么方法填充，都必须在<strong>训练集上计算填充值</strong>（如均值），然后<strong>用同样的值填充测试集</strong>。不能在测试集上重新计算——这会造成数据泄露，和"训练集测试集必须分离"是一条原则。</div>
+</section>
+
+<!-- Slide 3: 数值缩放 -->
+<section class="slide" id="slide3">
+  <div class="section-title"><span class="num orange">3</span> 数值缩放：让所有特征"站在同一起跑线"</div>
+  <div class="section-subtitle">年龄0-100 vs 收入0-100000——如果不缩放，模型会"偏心"</div>
+
+  <div class="compare-row">
+    <div class="compare-col" style="border-left:4px solid var(--blue);">
+      <h4 style="color:var(--blue);">标准化 Standardization (Z-score)</h4>
+      <div class="formula-box">x' = (x − μ) / σ<br>结果：均值=0, 标准差=1</div>
+      <p>• 不把数据压缩到固定区间</p><p>• 保留异常值的影响（只是缩放了）</p><p>• <strong>适合：</strong>假设数据服从正态分布的算法——<strong>PCA、线性回归、逻辑回归、神经网络</strong></p><p>• 对异常值较敏感</p>
+    </div>
+    <div class="compare-col" style="border-left:4px solid var(--green);">
+      <h4 style="color:var(--green);">归一化 Normalization (Min-Max)</h4>
+      <div class="formula-box">x' = (x − min) / (max − min)<br>结果：所有值∈[0, 1]</div>
+      <p>• 把数据严格压缩到[0,1]区间</p><p>• 保留原始分布的形状</p><p>• <strong>适合：</strong>对距离敏感且不需要正态假设的算法——<strong>K-Means、KNN、图像处理的像素值</strong></p><p>• 对异常值非常敏感（一个极值会压缩所有数据）</p>
+    </div>
+  </div>
+
+  <div class="callout danger"><strong>哪些算法不需要缩放？</strong>基于树的模型（决策树、随机森林、XGBoost）<strong>不需要</strong>标准化——它们只关心特征的相对排序，不关心绝对值。但 K-Means、KNN、神经网络、SVM、PCA 等<strong>必须先标准化</strong>，否则结果会被量纲大的特征主导。</div>
+
+  <div class="quiz-block"><h3>🧠 课堂小测</h3>
+    <div class="quiz-question">训练随机森林模型时，是否需要先对特征做标准化？</div>
+    <div class="quiz-options" id="quiz1">
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">A. 必须标准化，否则模型无法训练</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">B. 需要，因为随机森林也基于距离计算</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,true)">C. 不需要，树模型只关心特征的相对排序而非绝对值</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">D. 取决于数据集的大小</div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-fb"></div>
+  </div>
+</section>
+
+<!-- Slide 4: One-Hot -->
+<section class="slide" id="slide4">
+  <div class="section-title"><span class="num orange">4</span> 类别编码：把"文字"变成"数字"</div>
+  <div class="section-subtitle">模型只懂数字——"北京""上海""广州"必须被翻译成它能理解的形式</div>
+
+  <div class="content-block">
+    <h3>为什么不能直接映射成 1, 2, 3？</h3>
+    <p>如果把"北京=1, 上海=2, 广州=3"，模型会认为"上海比北京大1，广州比上海大1"——这意味着三个城市之间有<strong>大小和顺序关系</strong>，但实际上并没有。这种错误的数值关系会误导模型。</p>
+  </div>
+
+  <div class="content-block"><h3>One-Hot 编码：为每个类别创建一个独立的 0/1 列</h3></div>
+  <table class="data-table">
+    <thead><tr><th>客户ID</th><th>城市</th><th>城市_北京</th><th>城市_上海</th><th>城市_广州</th></tr></thead>
+    <tbody>
+      <tr><td>001</td><td>北京</td><td>1</td><td>0</td><td>0</td></tr>
+      <tr><td>002</td><td>上海</td><td>0</td><td>1</td><td>0</td></tr>
+      <tr><td>003</td><td>广州</td><td>0</td><td>0</td><td>1</td></tr>
+      <tr><td>004</td><td>北京</td><td>1</td><td>0</td><td>0</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card-row">
+    <div class="card" style="border-left:4px solid var(--green);"><h4>✅ 优点</h4><p>• 消除了错误的顺序关系</p><p>• 每个类别独立表示，模型可以自由学习每个类别的影响</p><p>• 适用于绝大多数模型</p></div>
+    <div class="card" style="border-left:4px solid var(--orange);"><h4>⚠️ 注意事项</h4><p>• 如果类别数量很多（如"商品ID"有10万种），One-Hot会创建10万列——维度爆炸</p><p>• 此时需要用目标编码（Target Encoding）或 Embedding 等其他方法</p><p>• 记得<strong>去掉一列</strong>避免多重共线性（drop='first'）</p></div>
+  </div>
+
+  <div class="callout info"><strong>Label Encoding 的特殊场景</strong>如果类别本身有顺序（如"小学<中学<大学"），那么直接用 1,2,3 编码是合理的。或者某些树模型（如 LightGBM）可以直接处理类别特征，不需要手动 One-Hot。知道这些例外能帮你更灵活地选择编码策略。</div>
+</section>
+
+<!-- Slide 5: 特征构造 -->
+<section class="slide" id="slide5">
+  <div class="section-title"><span class="num blue">5</span> 特征构造：把业务知识"注入"数据</div>
+  <div class="section-subtitle">好的算法 + 烂特征 < 简单算法 + 好特征——这就是特征工程的价值</div>
+
+  <div class="img-container">
+    <img src="images/feature_engineering.png" alt="特征构造四大方法" loading="lazy">
+    <div class="caption">图：特征构造的四大方向——四则运算、分箱、交叉特征、时间衍生</div>
+  </div>
+
+  <div class="card-row">
+    <div class="card" style="border-top:3px solid var(--blue);"><div class="card-icon">➕</div><h4>① 四则运算 / 比率</h4><p>从已有特征通过加减乘除创造新特征。<br><em>例：BMI = 体重/身高²、客单价 = 总消费/购买次数、利润率 = 利润/收入</em></p></div>
+    <div class="card" style="border-top:3px solid var(--green);"><div class="card-icon">📦</div><h4>② 分箱 / 离散化</h4><p>把连续值切成几段变成类别。<br><em>例：年龄→"青年/壮年/中年/老年"、消费金额→"低/中/高"</em></p><p style="font-size:13px;color:var(--gray-600);">好处：捕捉非线性关系、对异常值不敏感</p></div>
+    <div class="card" style="border-top:3px solid var(--orange);"><div class="card-icon">✖️</div><h4>③ 交叉特征</h4><p>两个或多个特征组合形成新特征。<br><em>例：性别×年龄段 → "男_青年""女_中年"等，城市×品类 → "北京_电子产品""上海_美妆"</em></p></div>
+    <div class="card" style="border-top:3px solid var(--purple);"><div class="card-icon">🕐</div><h4>④ 时间衍生</h4><p>从时间戳中提取丰富信息。<br><em>例：从"购买时间"衍生出"星期几/是否周末/距上次购买天数/是第几季度/是否节假日"</em></p></div>
+  </div>
+
+  <div class="callout success"><strong>特征构造的本质</strong>就是<strong>把人类的业务理解翻译成机器能用的数字</strong>。比如你知道"最近一次购买距今越短，客户越活跃"——你可以直接构造一个"距上次购买天数"的特征，让模型不必自己从原始数据中去"悟"出这个规律。好的特征让模型事半功倍。</div>
+</section>
+
+<!-- Slide 6: 特征选择 -->
+<section class="slide" id="slide6">
+  <div class="section-title"><span class="num green">6</span> 特征选择：从100个特征中找出真正有用的15个</div>
+  <div class="section-subtitle">不是特征越多越好——噪音和冗余反而会伤害模型</div>
+
+  <div class="img-container">
+    <img src="images/feature_selection.png" alt="三种特征选择方法对比" loading="lazy">
+    <div class="caption">图：过滤法、包装法、嵌入法——三种特征选择策略各有适用场景</div>
+  </div>
+
+  <div class="card-row">
+    <div class="card" style="border-left:4px solid var(--blue);"><h4>过滤法 Filter</h4><p><strong>独立于模型</strong>，在训练之前就筛选。计算每个特征与目标的相关性（方差、相关系数、卡方检验），设定阈值淘汰低相关特征。</p><p style="margin-top:8px;font-size:13px;">✅ 速度快，适合初筛<br>⚠️ 不考虑特征之间的交互</p></div>
+    <div class="card" style="border-left:4px solid var(--green);"><h4>包装法 Wrapper</h4><p><strong>用模型评估</strong>特征子集的好坏。代表：RFE（递归特征消除）——反复训练模型，每次去掉最不重要的特征，直到剩下目标数量。</p><p style="margin-top:8px;font-size:13px;">✅ 效果通常最好<br>⚠️ 计算量最大</p></div>
+    <div class="card" style="border-left:4px solid var(--purple);"><h4>嵌入法 Embedded</h4><p><strong>在训练过程中自动选择</strong>。代表：Lasso 回归（L1正则化把不重要特征的权重压缩到0）、决策树的特征重要性排名。</p><p style="margin-top:8px;font-size:13px;">✅ 兼顾效果和效率<br>⚠️ 依赖于所选模型</p></div>
+  </div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">① 过滤法<br><small>快速淘汰<br>从100→50</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">② 嵌入法<br><small>训练中筛选<br>从50→20</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">③ 包装法<br><small>精细选择<br>从20→15</small></div>
+  </div>
+  <p style="text-align:center;font-size:14px;color:var(--gray-600);">实践中常组合使用：先用过滤法快速淘汰明显无关的特征，再用嵌入法或包装法做精细筛选。</p>
+</section>
+
+<!-- Slide 7: 降维 -->
+<section class="slide" id="slide7">
+  <div class="section-title"><span class="num purple">7</span> 降维：当特征多到"维度灾难"时</div>
+  <div class="section-subtitle">不是删除特征，而是把高维数据"压缩"到低维，同时尽量保留信息</div>
+
+  <div class="img-container">
+    <img src="images/dim_reduction.png" alt="PCA t-SNE LDA降维对比" loading="lazy">
+    <div class="caption">图：PCA（线性保留方差）、t-SNE（非线性可视化）、LDA（有监督降维）</div>
+  </div>
+
+  <div class="content-block">
+    <h3>为什么需要降维？——维度灾难</h3>
+    <p>随着特征维度增加，数据点之间的距离变得越来越"相似"——在高维空间中，几乎所有点之间的距离都差不多。这使得基于距离的算法（KNN、K-Means）在高维数据上失效。同时，高维数据无法可视化（人类只能理解2D/3D），训练也更慢。</p>
+  </div>
+
+  <table class="data-table">
+    <thead><tr><th>方法</th><th>类型</th><th>核心思想</th><th>优点</th><th>局限</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag purple">PCA</span></td><td>线性·无监督</td><td>找到方差最大的方向（主成分），把数据投影上去</td><td>可逆、可解释（每个主成分的贡献率）、速度快</td><td>只能捕捉线性关系</td></tr>
+      <tr><td><span class="tag blue">t-SNE</span></td><td>非线性·无监督</td><td>保持局部邻居关系——高维空间中近的点在低维中也近</td><td>可视化效果极好，能展现清晰的簇结构</td><td>不可逆、仅适合可视化、速度慢、参数敏感</td></tr>
+      <tr><td><span class="tag green">UMAP</span></td><td>非线性·无监督</td><td>t-SNE的进化版，兼顾全局结构和局部关系</td><td>比t-SNE快、保留更多全局结构</td><td>较新，参数理解门槛稍高</td></tr>
+      <tr><td><span class="tag orange">LDA</span></td><td>线性·有监督</td><td>找到让不同类别"分得最开"的投影方向</td><td>利用标签信息，分类场景下降维效果优于PCA</td><td>需要标签、最多降到K-1维（K=类别数）</td></tr>
+    </tbody>
+  </table>
+
+  <div class="quiz-block"><h3>🧠 课堂小测</h3>
+    <div class="quiz-question">PCA 降维和特征选择（如过滤法）的本质区别是什么？</div>
+    <div class="quiz-options" id="quiz2">
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">A. PCA 更快，特征选择更慢</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">B. PCA 只适用于分类，特征选择只适用于回归</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,true)">C. 特征选择保留原始特征，PCA 创造新的组合特征（主成分）</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">D. 两者没有任何区别，只是名字不同</div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-fb"></div>
+  </div>
+</section>
+
+<!-- Slide 8: 全流程 -->
+<section class="slide" id="slide8">
+  <div class="section-title"><span class="num red">8</span> 全流程串联：从原始数据到建模就绪</div>
+  <div class="section-subtitle">把四步串起来——真实项目中数据准备的完整"流水线"</div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--red-light);color:var(--red);">原始数据<br><small>有缺失·量纲乱<br>有文字·100维</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">① 预处理<br><small>填缺失·标准化<br>One-Hot编码</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">② 特征构造<br><small>四则·分箱·交叉<br>→120维</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">③ 特征选择<br><small>过滤+嵌入<br>→25维</small></div><div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">④ PCA降维<br><small>→15维<br>保留95%方差</small></div>
+  </div>
+
+  <div class="content-block"><h3>真实案例：客户流失预测的数据准备</h3></div>
+  <table class="data-table">
+    <thead><tr><th>步骤</th><th>操作</th><th>输入</th><th>输出</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag red">预处理</span></td><td>中位数填缺失年龄、Z-score标准化金额、One-Hot编码城市(3类)</td><td>8列原始数据</td><td>12列干净数据</td></tr>
+      <tr><td><span class="tag orange">特征构造</span></td><td>构造客单价=总消费/购买次数、距上次购买天数、购买频率等级(高/中/低)、是否周末购买</td><td>12列</td><td>18列</td></tr>
+      <tr><td><span class="tag green">特征选择</span></td><td>方差过滤去常值→相关系数去冗余→随机森林重要性取Top10</td><td>18列</td><td>10列</td></tr>
+      <tr><td><span class="tag purple">降维(可选)</span></td><td>如果还需进一步压缩或可视化，PCA降到3维（散点图）</td><td>10列</td><td>3维/10列</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout success"><strong>Pipeline 思维</strong>在实际项目中，以上步骤应该封装成一个自动化的 <strong>Pipeline（流水线）</strong>，确保训练集和测试集经历完全相同的变换。Scikit-learn 的 Pipeline 类就是为此设计的——它把预处理+特征工程+模型训练串联起来，避免数据泄露，也让代码更整洁。</div>
+</section>
+
+<!-- Slide 9: 总结 -->
+<section class="slide" id="slide9">
+  <div class="section-title"><span class="num purple">🏁</span> 课程总结</div>
+  <div class="section-subtitle">回顾这80分钟：数据准备才是机器学习的"主战场"</div>
+
+  <div style="background:#fff;border-radius:14px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);margin-bottom:20px;">
+    <div style="font-size:var(--font-md);line-height:2.2;">
+      <p><strong>💡 核心认知</strong> → 数据和特征决定上限，模型只是在逼近上限 —— "垃圾进，垃圾出"</p>
+      <p style="margin-left:20px;">↳ <strong>① 基础预处理</strong> → 缺失值（删/填/预测/保留信号）→ 标准化 vs 归一化（不同算法需要不同）→ One-Hot编码（避免虚假顺序）</p>
+      <p style="margin-left:40px;">↳ <strong>② 特征构造</strong> → 四则运算/比率 → 分箱离散化 → 交叉特征 → 时间衍生 → 本质：注入业务知识</p>
+      <p style="margin-left:60px;">↳ <strong>③ 特征选择</strong> → 过滤法（独立快筛）→ 包装法（模型评估）→ 嵌入法（训练中筛选）→ 三步组合策略</p>
+      <p style="margin-left:80px;">↳ <strong>④ 降维</strong> → PCA（线性·保留方差）→ t-SNE/UMAP（非线性·可视化）→ LDA（有监督·最大化类间距）</p>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <strong>四个核心收获</strong>
+    <p style="margin-top:8px;">1. 数据预处理是机器学习的"入场券"——缺失值不处理、量纲不统一、类别不编码，绝大多数模型根本无法工作。</p>
+    <p>2. 特征构造是"增值"环节——好的特征比好的算法更管用。把业务知识翻译成数学语言，这是数据科学家最核心的能力之一。</p>
+    <p>3. 特征选择是"瘦身"——多余的噪音和冗余特征会降低模型效果和训练速度。先用过滤法初筛，再用嵌入法或包装法精选。</p>
+    <p>4. 降维 ≠ 特征选择——特征选择保留原始特征，降维创造新特征（如PCA主成分）。两者目标相同（减少维度），但手段不同。</p>
+  </div>
+
+  <div class="callout info" style="text-align:center;">
+    <strong>🎉 恭喜完成本次课程！</strong><br>
+    你现在已经理解了机器学习中数据准备的完整四步流程。记住：<em>特征工程不是"锦上添花"，而是决定模型成败的"地基工程"。</em>继续深入的话，可以探索自动化特征工程（Featuretools）、深度学习的表示学习（Representation Learning）、以及大规模数据下的特征存储和特征服务（Feature Store）。
+  </div>
+</section>
+
+</main>
+
+<script>
+var totalSlides=10,slideIds=[],currentSlide=0;
+for(var i=0;i<totalSlides;i++)slideIds.push('slide'+i);
+function goToSlide(index){
+  slideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active')});
+  var target=document.getElementById('slide'+index);
+  if(target)target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(item){item.classList.remove('active');if(parseInt(item.dataset.slide)===index)item.classList.add('active')});
+  document.getElementById('progressFill').style.width=(index/(totalSlides-1)*100)+'%';
+  document.getElementById('mainContent').scrollTop=0;
+  currentSlide=index;
+}
+document.querySelectorAll('.nav-item').forEach(function(item){item.addEventListener('click',function(){goToSlide(parseInt(this.dataset.slide))})});
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '){e.preventDefault();if(currentSlide<totalSlides-1)goToSlide(currentSlide+1)}
+  else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();if(currentSlide>0)goToSlide(currentSlide-1)}
+  else if(e.key==='Home'){e.preventDefault();goToSlide(0)}
+  else if(e.key==='End'){e.preventDefault();goToSlide(totalSlides-1)}
+});
+slideIds.forEach(function(id,idx){
+  if(idx===0)return;
+  var slide=document.getElementById(id);
+  if(!slide)return;
+  var nav=document.createElement('div');
+  nav.className='bottom-nav';
+  nav.innerHTML='<button class="btn-prev" onclick="goToSlide('+(idx-1)+')">← 上一页</button><span style="font-size:14px;color:var(--gray-600);align-self:center;">'+idx+' / '+(totalSlides-1)+'</span><button class="btn-next" onclick="goToSlide('+(idx+1)+')">'+(idx<totalSlides-1?'下一页 →':'回到封面 🏠')+'</button>';
+  slide.appendChild(nav);
+});
+function checkQuiz(quizId,optionEl,isCorrect){
+  var quiz=document.getElementById(quizId),fb=document.getElementById(quizId+'-fb');
+  quiz.querySelectorAll('.quiz-option').forEach(function(opt){opt.classList.remove('correct','wrong')});
+  var msgs={
+    'quiz1':{correct:'✅ 正确！决策树和随机森林基于特征的分裂点（如"收入>5000?"），只关心排序而非绝对值，不需要标准化。',wrong:'❌ 再想想。树模型只关心"某个特征是否大于某个阈值"，缩放不会改变排序，所以不需要标准化。但K-Means、神经网络等模型必须先标准化。'},
+    'quiz2':{correct:'✅ 正确！特征选择是从原始特征中挑选子集（保留原特征），PCA则是对原始特征做线性组合形成全新的主成分。',wrong:'❌ 再想想。特征选择是"挑选"，PCA是"组合"——特征选择后的特征你还能叫出名字（如"年龄""收入"），PCA后的主成分是无名的新变量。'}
+  };
+  if(isCorrect){optionEl.classList.add('correct');fb.className='quiz-feedback show';fb.style.background='var(--green-light)';fb.style.color='#166534';fb.textContent=msgs[quizId].correct}
+  else{optionEl.classList.add('wrong');fb.className='quiz-feedback show';fb.style.background='var(--red-light)';fb.style.color='#991b1b';fb.textContent=msgs[quizId].wrong}
+}
+goToSlide(0);
+</script>
+</body>
+</html>
