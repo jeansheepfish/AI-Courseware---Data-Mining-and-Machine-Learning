@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>贝叶斯·神经网络·集成学习 — 高中AI课堂</title>
+<style>
+:root {
+  --blue: #2563eb; --blue-light: #dbeafe;
+  --green: #16a34a; --green-light: #dcfce7;
+  --orange: #ea580c; --orange-light: #fff7ed;
+  --red: #dc2626; --red-light: #fef2f2;
+  --purple: #7c3aed; --purple-light: #f5f3ff;
+  --teal: #0d9488; --teal-light: #ccfbf1;
+  --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+  --gray-300: #d1d5db; --gray-600: #4b5563; --gray-700: #374151;
+  --gray-800: #1f2937; --gray-900: #111827;
+  --sidebar-w: 260px;
+  --font-xl: 32px; --font-lg: 22px; --font-md: 18px; --font-sm: 15px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  background: var(--gray-50); color: var(--gray-800);
+  display: flex; height: 100vh; overflow: hidden;
+  font-size: var(--font-md); line-height: 1.7;
+}
+.sidebar {
+  width: var(--sidebar-w); min-width: var(--sidebar-w);
+  background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%);
+  color: #fff; display: flex; flex-direction: column; z-index: 10;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+}
+.sidebar-header { padding: 28px 20px 20px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+.sidebar-header h1 { font-size: 20px; font-weight: 700; letter-spacing: 0.5px; }
+.sidebar-header .subtitle { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 4px; }
+.sidebar-nav { flex: 1; overflow-y: auto; padding: 12px 0; }
+.nav-section { margin-bottom: 4px; }
+.nav-section-title { padding: 10px 20px 4px; font-size: 11px; text-transform: uppercase; letter-spacing: 2px; color: rgba(255,255,255,0.4); font-weight: 600; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 20px; cursor: pointer; transition: all 0.2s; border-left: 3px solid transparent; font-size: 14px; color: rgba(255,255,255,0.75); user-select: none; }
+.nav-item:hover { background: rgba(255,255,255,0.08); color: #fff; }
+.nav-item.active { background: rgba(255,255,255,0.12); border-left-color: #60a5fa; color: #fff; font-weight: 600; }
+.nav-item .icon { width: 22px; text-align: center; font-size: 15px; flex-shrink: 0; }
+.sidebar-footer { padding: 14px 20px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 12px; color: rgba(255,255,255,0.35); }
+.main { flex: 1; overflow-y: auto; padding: 0; scroll-behavior: smooth; }
+.slide { display: none; min-height: 100vh; padding: 48px 56px 40px; animation: fadeSlideIn 0.4s ease; }
+.slide.active { display: block; }
+@keyframes fadeSlideIn { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+
+.cover { flex-direction: column; justify-content: center; align-items: center; text-align: center; background: linear-gradient(135deg,#eff6ff 0%,#f0fdf4 40%,#fff7ed 100%); min-height: 100vh; }
+.slide.active.cover { display: flex; }
+.cover-icon { font-size: 80px; margin-bottom: 20px; }
+.cover h1 { font-size: 48px; font-weight: 800; background: linear-gradient(135deg,#1e3a5f,#2563eb); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.cover .tagline { font-size: var(--font-lg); color: var(--gray-600); margin-top: 12px; max-width: 650px; }
+.cover .meta { margin-top: 32px; display: flex; gap: 24px; font-size: 15px; color: var(--gray-600); }
+.cover .meta span { background: #fff; padding: 6px 16px; border-radius: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.cover .start-btn { margin-top: 36px; padding: 14px 40px; font-size: 19px; font-weight: 600; background: var(--blue); color: #fff; border: none; border-radius: 12px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 14px rgba(37,99,235,0.35); }
+.cover .start-btn:hover { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(37,99,235,0.45); }
+
+.section-title { font-size: var(--font-xl); font-weight: 700; color: var(--gray-900); margin-bottom: 8px; display: flex; align-items: center; gap: 12px; }
+.section-title .num { display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 12px; font-size: 20px; font-weight: 700; flex-shrink: 0; }
+.num.blue { background: var(--blue-light); color: var(--blue); }
+.num.green { background: var(--green-light); color: var(--green); }
+.num.orange { background: var(--orange-light); color: var(--orange); }
+.num.purple { background: var(--purple-light); color: var(--purple); }
+.num.red { background: var(--red-light); color: var(--red); }
+.num.teal { background: var(--teal-light); color: var(--teal); }
+.section-subtitle { font-size: 16px; color: var(--gray-600); margin-bottom: 28px; }
+.content-block { margin-bottom: 28px; }
+.content-block h3 { font-size: var(--font-lg); font-weight: 700; color: var(--gray-800); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 2px solid var(--gray-200); }
+.content-block p { margin-bottom: 10px; color: var(--gray-700); }
+
+.card-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; margin-bottom: 24px; }
+.card { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--gray-200); transition: all 0.2s; }
+.card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.1); transform: translateY(-2px); }
+.card .card-icon { font-size: 36px; margin-bottom: 10px; }
+.card h4 { font-size: var(--font-lg); font-weight: 700; margin-bottom: 6px; }
+.card p { font-size: var(--font-sm); color: var(--gray-600); line-height: 1.6; }
+
+.callout { padding: 18px 22px; border-radius: 12px; margin-bottom: 20px; font-size: var(--font-md); border-left: 5px solid; }
+.callout.info { background: var(--blue-light); border-color: var(--blue); color: #1e40af; }
+.callout.success { background: var(--green-light); border-color: var(--green); color: #166534; }
+.callout.warning { background: var(--orange-light); border-color: var(--orange); color: #9a3412; }
+.callout.danger { background: var(--red-light); border-color: var(--red); color: #991b1b; }
+.callout strong { display: block; margin-bottom: 4px; font-size: var(--font-lg); }
+
+.img-container { margin: 24px 0; text-align: center; background: #fff; border-radius: 14px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--gray-200); }
+.img-container img { max-width: 100%; height: auto; border-radius: 8px; }
+.img-container .caption { margin-top: 10px; font-size: var(--font-sm); color: var(--gray-600); font-style: italic; }
+
+.quiz-block { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--gray-200); margin-bottom: 24px; }
+.quiz-block h3 { margin-bottom: 16px; font-size: var(--font-lg); }
+.quiz-question { font-size: var(--font-md); font-weight: 600; margin-bottom: 12px; }
+.quiz-options { display: flex; flex-direction: column; gap: 8px; }
+.quiz-option { padding: 12px 18px; border: 2px solid var(--gray-200); border-radius: 8px; cursor: pointer; transition: all 0.2s; user-select: none; }
+.quiz-option:hover { border-color: var(--blue); background: #f8faff; }
+.quiz-option.correct { border-color: var(--green); background: var(--green-light); font-weight: 600; }
+.quiz-option.wrong { border-color: var(--red); background: var(--red-light); }
+.quiz-feedback { margin-top: 12px; padding: 10px 16px; border-radius: 8px; display: none; font-size: var(--font-sm); }
+.quiz-feedback.show { display: block; }
+
+.data-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: var(--font-sm); background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+.data-table th { background: var(--blue); color: #fff; padding: 12px 16px; text-align: center; font-weight: 600; }
+.data-table td { padding: 10px 16px; text-align: center; border-bottom: 1px solid var(--gray-200); }
+.data-table tr:last-child td { border-bottom: none; }
+.data-table .highlight { font-weight: 700; background: var(--green-light); }
+
+.progress-bar { position: fixed; top: 0; left: var(--sidebar-w); right: 0; height: 4px; background: var(--gray-200); z-index: 20; }
+.progress-fill { height: 100%; background: var(--blue); transition: width 0.3s; border-radius: 0 2px 2px 0; }
+
+.bottom-nav { display: flex; justify-content: space-between; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--gray-200); }
+.bottom-nav button { padding: 10px 24px; font-size: var(--font-md); font-weight: 600; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; }
+.btn-prev { background: var(--gray-100); color: var(--gray-700); }
+.btn-prev:hover { background: var(--gray-200); }
+.btn-next { background: var(--blue); color: #fff; }
+.btn-next:hover { background: #1d4ed8; }
+
+.tag { display: inline-block; padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; margin-right: 4px; }
+.tag.blue { background: var(--blue-light); color: var(--blue); }
+.tag.green { background: var(--green-light); color: var(--green); }
+.tag.orange { background: var(--orange-light); color: var(--orange); }
+.tag.red { background: var(--red-light); color: var(--red); }
+.tag.purple { background: var(--purple-light); color: var(--purple); }
+
+.formula-box { background: #1e293b; color: #e2e8f0; padding: 18px 24px; border-radius: 10px; font-family: "SF Mono","Consolas","Courier New",monospace; font-size: var(--font-md); text-align: center; margin-bottom: 20px; letter-spacing: 1px; }
+
+.flow-chart { display: flex; align-items: center; justify-content: center; gap: 16px; flex-wrap: wrap; padding: 20px; background: #fff; border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); margin-bottom: 24px; }
+.flow-step { padding: 14px 22px; border-radius: 10px; font-weight: 600; font-size: var(--font-md); text-align: center; }
+.flow-arrow { font-size: 24px; color: var(--gray-400); }
+
+.compare-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+.compare-col { background: #fff; border-radius: 14px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1px solid var(--gray-200); }
+.compare-col h4 { text-align: center; margin-bottom: 14px; font-size: var(--font-lg); }
+
+@media (max-width: 900px) {
+  .sidebar { width: 200px; min-width: 200px; }
+  :root { --sidebar-w: 200px; }
+  .slide { padding: 32px 24px 28px; }
+  .cover h1 { font-size: 36px; }
+  .section-title { font-size: 24px; }
+  .compare-row { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h1>贝叶斯·神经网络·集成学习</h1>
+    <div class="subtitle">高中AI课堂 · 80分钟课件</div>
+  </div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section"><div class="nav-section-title">课程导航</div>
+      <div class="nav-item active" data-slide="0"><span class="icon">🏠</span> 封面</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">第一部分 朴素贝叶斯</div>
+      <div class="nav-item" data-slide="1"><span class="icon">📐</span> 贝叶斯定理</div>
+      <div class="nav-item" data-slide="2"><span class="icon">🧩</span> 条件独立假设</div>
+      <div class="nav-item" data-slide="3"><span class="icon">⚖️</span> 优缺点·适用场景</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">第二部分 MLP 神经网络</div>
+      <div class="nav-item" data-slide="4"><span class="icon">🧠</span> MLP 结构解析</div>
+      <div class="nav-item" data-slide="5"><span class="icon">📏</span> 为什么必须标准化</div>
+      <div class="nav-item" data-slide="6"><span class="icon">🔲</span> 黑箱问题·优缺点</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">第三部分 集成学习</div>
+      <div class="nav-item" data-slide="7"><span class="icon">🎒</span> Bagging · 并行投票</div>
+      <div class="nav-item" data-slide="8"><span class="icon">🚀</span> Boosting · 序列纠错</div>
+      <div class="nav-item" data-slide="9"><span class="icon">🌲</span> 随机森林详解</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">第四部分 实验对比</div>
+      <div class="nav-item" data-slide="10"><span class="icon">🧪</span> 四模型训练</div>
+      <div class="nav-item" data-slide="11"><span class="icon">📊</span> 对比分析与选型</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">扩展</div>
+      <div class="nav-item" data-slide="12"><span class="icon">🎯</span> 偏差-方差·选型框架</div>
+      <div class="nav-item" data-slide="13"><span class="icon">🏁</span> 课程总结</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">QoderWork · 高中AI课堂</div>
+</aside>
+
+<main class="main" id="mainContent">
+
+<!-- ===== Slide 0: 封面 ===== -->
+<section class="slide active cover" id="slide0">
+  <div class="cover-icon">🧠</div>
+  <h1>贝叶斯 · 神经网络 · 集成学习</h1>
+  <p class="tagline">从概率推理到深度学习，再到"三个臭皮匠顶个诸葛亮"——理解机器学习三大经典范式</p>
+  <div class="meta"><span>📚 高中AI课堂</span><span>⏱️ 80分钟</span><span>🎯 适合投屏教学</span></div>
+  <button class="start-btn" onclick="goToSlide(1)">开始学习 →</button>
+</section>
+
+<!-- ===== Slide 1: 贝叶斯定理 ===== -->
+<section class="slide" id="slide1">
+  <div class="section-title"><span class="num blue">1</span> 贝叶斯定理：用新证据更新信念</div>
+  <div class="section-subtitle">概率不是固定的——每当你获得新信息，就应该更新你的判断</div>
+
+  <div class="content-block">
+    <h3>一个故事：邮件是垃圾吗？</h3>
+    <p>假设你知道，在所有邮件中，大约 <strong>1%</strong> 是垃圾邮件。有一天你收到一封邮件，里面出现了"免费领取"这个词。你查了历史数据发现：垃圾邮件中含有"免费领取"的概率是 <strong>80%</strong>，而正常邮件中含有"免费领取"的概率只有 <strong>5%</strong>。</p>
+    <p>那么问题来了：<strong>收到这封含"免费领取"的邮件后，它是垃圾邮件的概率变成了多少？</strong></p>
+    <p style="font-size:14px;color:var(--gray-600);">直觉告诉你应该高于 1%，但具体是多少？贝叶斯定理给出了精确答案。</p>
+  </div>
+
+  <div class="img-container">
+    <img src="images/bayes_theorem.png" alt="贝叶斯定理示意图" loading="lazy">
+    <div class="caption">图：贝叶斯定理的核心思想——先验概率 × 似然 → 后验概率</div>
+  </div>
+
+  <div class="formula-box">P(垃圾|含"免费") = P(含"免费"|垃圾) × P(垃圾) / P(含"免费")<br>= 0.80 × 0.01 / (0.80×0.01 + 0.05×0.99) ≈ 13.9%</div>
+
+  <div class="callout info">
+    <strong>三个关键概念</strong>
+    <strong>先验概率 P(A)</strong>：在看到新证据之前，你对事件 A 发生概率的初始估计（垃圾邮件概率 1%）<br>
+    <strong>似然 P(B|A)</strong>：如果事件 A 为真，新证据 B 出现的概率（垃圾邮件中出现"免费领取"的概率 80%）<br>
+    <strong>后验概率 P(A|B)</strong>：看到新证据 B 之后，事件 A 发生的更新概率（约 13.9%）
+  </div>
+</section>
+
+<!-- ===== Slide 2: 条件独立假设 ===== -->
+<section class="slide" id="slide2">
+  <div class="section-title"><span class="num blue">2</span> "朴素"在哪里？——条件独立假设</div>
+  <div class="section-subtitle">贝叶斯定理很优美，但一个现实问题让它很难直接用</div>
+
+  <div class="content-block">
+    <h3>从1个词到100个词——组合爆炸</h3>
+    <p>现实中判断垃圾邮件不可能只看一个词。一封邮件可能有上百个特征词："免费""中奖""点击""限时"……要精确计算 <strong>P(免费,中奖,点击,…|垃圾)</strong>，就需要知道这些词在垃圾邮件中<strong>同时出现</strong>的概率。可能的组合数量是天文数字，数据根本不够用。</p>
+  </div>
+
+  <div class="callout warning">
+    <strong>朴素贝叶斯的"暴力简化"</strong>
+    朴素贝叶斯做了一个极大胆的假设：<strong>所有特征在给定类别下是相互独立的</strong>。也就是说，在"垃圾邮件"这个前提下，"免费"是否出现和"中奖"是否出现没有关系。这样，联合概率就变成了各自概率的简单连乘：<br>
+    <em>P(词₁,词₂,…,词ₙ|垃圾) = P(词₁|垃圾) × P(词₂|垃圾) × … × P(词ₙ|垃圾)</em>
+  </div>
+
+  <div class="card-row">
+    <div class="card"><div class="card-icon">✅</div><h4>为什么这个假设"能用"？</h4><p>虽然现实中特征很少完全独立，但在很多场景下，这个近似并不影响最终的分类排序。模型关心的是"哪一类概率更高"，而不是精确的概率值。只要排序对了，分类就是对的。</p></div>
+    <div class="card"><div class="card-icon">⚠️</div><h4>"朴素"的代价</h4><p>如果特征之间有很强的关联（比如"下雨"和"地面湿"高度相关），模型会重复计算这部分信息，导致概率估计失真。这就是为什么朴素贝叶斯在特征高度相关的场景下效果会打折扣。</p></div>
+  </div>
+
+  <div class="quiz-block">
+    <h3>🧠 课堂小测</h3>
+    <div class="quiz-question">朴素贝叶斯的"朴素"指的是什么？</div>
+    <div class="quiz-options" id="quiz1">
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">A. 算法实现代码非常简单</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,true)">B. 假设所有特征在给定类别下相互独立</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">C. 只能处理非常简单的分类问题</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">D. 不需要任何训练数据就能预测</div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-fb"></div>
+  </div>
+</section>
+
+<!-- ===== Slide 3: 朴素贝叶斯优缺点 ===== -->
+<section class="slide" id="slide3">
+  <div class="section-title"><span class="num blue">3</span> 朴素贝叶斯：优缺点与适用场景</div>
+  <div class="section-subtitle">什么时候该用朴素贝叶斯？什么时候不该用？</div>
+
+  <div class="compare-row">
+    <div class="compare-col" style="border-left:4px solid var(--green);">
+      <h4 style="color:var(--green);">✅ 优点</h4>
+      <p style="margin-bottom:8px;">• <strong>训练极快</strong>——只需统计各类别下的特征频率，不需要迭代，时间复杂度 O(N)</p>
+      <p style="margin-bottom:8px;">• <strong>可解释性好</strong>——你可以清楚看到每个词对分类结果的贡献</p>
+      <p style="margin-bottom:8px;">• <strong>小数据也能用</strong>——参数少，不容易过拟合，样本需求远低于神经网络</p>
+      <p style="margin-bottom:8px;">• <strong>天然处理多分类</strong>——不像某些算法需要特殊改造</p>
+      <p style="margin-bottom:8px;">• <strong>对缺失数据不敏感</strong>——缺失的特征直接忽略即可</p>
+    </div>
+    <div class="compare-col" style="border-left:4px solid var(--red);">
+      <h4 style="color:var(--red);">❌ 缺点</h4>
+      <p style="margin-bottom:8px;">• <strong>条件独立假设过强</strong>——现实中特征往往相关，"朴素"假设可能导致概率估计不准</p>
+      <p style="margin-bottom:8px;">• <strong>对零概率敏感</strong>——某个词在训练集中没出现过，会直接让整个概率变成 0（需用拉普拉斯平滑）</p>
+      <p style="margin-bottom:8px;">• <strong>不适合复杂非线性关系</strong>——当特征和目标之间关系复杂时（如图像分类），表现远不如神经网络</p>
+      <p style="margin-bottom:8px;">• <strong>连续特征需离散化</strong>——原始的朴素贝叶斯处理连续数据效果不佳</p>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <strong>最佳应用场景：文本分类</strong>
+    垃圾邮件过滤、新闻分类、情感分析（正面/负面评论）——这些是朴素贝叶斯的"主场"。因为文本分类中特征（词）数量极大但相对独立，简单假设反而成了优势。许多邮件系统至今仍用朴素贝叶斯作为第一道防线。
+  </div>
+
+  <div class="card-row">
+    <div class="card"><div class="card-icon">📧</div><h4>垃圾邮件过滤</h4><p>经典应用，训练快、效果稳定。大多数字邮箱都在用它。</p></div>
+    <div class="card"><div class="card-icon">📰</div><h4>新闻自动分类</h4><p>根据文章内容自动归类到"体育""科技""娱乐"等频道。</p></div>
+    <div class="card"><div class="card-icon">😊</div><h4>情感分析</h4><p>判断一段评论是正面还是负面。电商平台大量使用。</p></div>
+    <div class="card"><div class="card-icon">🔍</div><h4>实时检测</h4><p>速度快，适合需要毫秒级响应的在线分类场景。</p></div>
+  </div>
+</section>
+
+<!-- ===== Slide 4: MLP 结构 ===== -->
+<section class="slide" id="slide4">
+  <div class="section-title"><span class="num green">4</span> MLP 神经网络：结构解析</div>
+  <div class="section-subtitle">从生物神经元到人工神经元——理解"深度学习"的基本单元</div>
+
+  <div class="content-block">
+    <h3>什么是 MLP？</h3>
+    <p><strong>MLP（多层感知机，Multi-Layer Perceptron）</strong> 是最经典的前馈神经网络。它由一层层"神经元"堆叠而成，信息从输入层流入，经过隐藏层的变换，最终在输出层给出预测。每一个连接都有一个<strong>权重</strong>（weight），代表了这条连接"有多重要"。</p>
+  </div>
+
+  <div class="img-container">
+    <img src="images/mlp_network.png" alt="MLP神经网络结构图" loading="lazy">
+    <div class="caption">图：MLP 三层结构——输入层（特征）→ 隐藏层（特征变换）→ 输出层（分类结果）</div>
+  </div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">输入层<br><small>n个特征</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">隐藏层₁<br><small>加权求和 → ReLU</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">隐藏层₂<br><small>加权求和 → ReLU</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">输出层<br><small>Softmax → 概率</small></div>
+  </div>
+
+  <div class="callout info">
+    <strong>三个关键组件</strong>
+    <strong>① 加权求和：</strong>每个神经元把它收到的所有输入信号乘以各自的权重，相加得到一个总信号。<br>
+    <strong>② 激活函数（如 ReLU）：</strong>对加权求和的结果做一次非线性变换。如果没有激活函数，多层网络就会退化成单层线性模型，失去表达复杂关系的能力。<br>
+    <strong>③ Softmax：</strong>输出层常用的激活函数，把原始分数转化为概率分布，所有类别的概率加起来等于 1。
+  </div>
+</section>
+
+<!-- ===== Slide 5: 为什么必须标准化 ===== -->
+<section class="slide" id="slide5">
+  <div class="section-title"><span class="num green">5</span> 为什么神经网络必须做标准化？</div>
+  <div class="section-subtitle">不同特征如果量纲差太远，神经网络会"偏科"</div>
+
+  <div class="content-block">
+    <h3>一个直观的例子</h3>
+    <p>假设你要用神经网络判断客户价值。两个特征：<strong>年龄</strong>（范围 0~100）和 <strong>年收入</strong>（范围 0~1,000,000）。如果不做标准化，收入这个特征的数值比年龄大几千倍，神经网络的权重更新会被收入"牵着鼻子走"，年龄几乎不起作用。</p>
+  </div>
+
+  <div class="compare-row">
+    <div class="compare-col" style="border-left:4px solid var(--red);">
+      <h4 style="color:var(--red);">❌ 不标准化的后果</h4>
+      <p>• 梯度更新不稳定：大数值特征主导梯度，小数值特征更新缓慢甚至停滞</p>
+      <p>• 收敛速度慢：优化器需要在"狭长"的损失函数表面上曲折前行，训练时间大幅增加</p>
+      <p>• 模型性能退化：部分特征实际上"被忽略"了，模型学不到完整的信息</p>
+    </div>
+    <div class="compare-col" style="border-left:4px solid var(--green);">
+      <h4 style="color:var(--green);">✅ 标准化后的好处</h4>
+      <p>• 所有特征处于同一数量级，权重更新公平高效</p>
+      <p>• 损失函数表面更"圆润"，梯度下降更快更稳</p>
+      <p>• 模型能充分利用每一个特征的信息</p>
+    </div>
+  </div>
+
+  <div class="formula-box">Z-score 标准化：x' = (x − μ) / σ<br>把每个特征变换为均值=0、标准差=1的分布</div>
+
+  <div class="callout warning">
+    <strong>重要提示</strong>
+    标准化只能使用<strong>训练集</strong>的均值和标准差来计算！测试集的标准化参数必须来自训练集，否则会造成数据泄露。这与"训练集和测试集必须分离"的原则一脉相承。
+  </div>
+</section>
+
+<!-- ===== Slide 6: MLP 黑箱问题 ===== -->
+<section class="slide" id="slide6">
+  <div class="section-title"><span class="num green">6</span> MLP 的优缺点与"黑箱"问题</div>
+  <div class="section-subtitle">神经网络很强大，但你可能永远不知道它为什么做某个判断</div>
+
+  <div class="compare-row">
+    <div class="compare-col" style="border-left:4px solid var(--green);">
+      <h4 style="color:var(--green);">✅ 优点</h4>
+      <p style="margin-bottom:8px;">• <strong>拟合能力强</strong>——理论上只要隐藏层足够宽/深，MLP 可以逼近任意连续函数</p>
+      <p style="margin-bottom:8px;">• <strong>自动特征学习</strong>——隐藏层会自动提取高阶特征组合，不需要人工设计</p>
+      <p style="margin-bottom:8px;">• <strong>处理复杂关系</strong>——能捕捉特征之间非线性的、交互式的关系</p>
+      <p style="margin-bottom:8px;">• <strong>支持在线学习</strong>——可以分批训练，适合数据量大的场景</p>
+    </div>
+    <div class="compare-col" style="border-left:4px solid var(--red);">
+      <h4 style="color:var(--red);">❌ 缺点</h4>
+      <p style="margin-bottom:8px;">• <strong>黑箱不可解释</strong>——成千上万个权重交织在一起，你无法清楚解释"为什么模型说这个客户是高价值"</p>
+      <p style="margin-bottom:8px;">• <strong>数据需求量大</strong>——参数多，小数据集容易过拟合</p>
+      <p style="margin-bottom:8px;">• <strong>对超参数敏感</strong>——层数、每层神经元数、学习率、激活函数……调参工作量不小</p>
+      <p style="margin-bottom:8px;">• <strong>训练时间长</strong>——相比决策树和朴素贝叶斯，训练速度慢得多</p>
+    </div>
+  </div>
+
+  <div class="callout danger">
+    <strong>黑箱问题：一个真实的风险</strong>
+    假设你用 MLP 做了一个贷款审批系统。一个客户被拒了，来问"为什么拒我？"你能回答吗？决策树可以给你一条清晰的 IF-THEN 规则，朴素贝叶斯可以告诉你哪个词贡献了最多概率，但 MLP 的几百层权重让你只能说"模型综合判断的结果"。在金融、医疗、司法等需要<strong>可解释性</strong>的领域，这可能是致命的缺陷。
+  </div>
+
+  <div class="quiz-block">
+    <h3>🧠 课堂小测</h3>
+    <div class="quiz-question">以下哪个是神经网络相比决策树的主要劣势？</div>
+    <div class="quiz-options" id="quiz2">
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">A. 神经网络不能处理分类问题</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">B. 神经网络比决策树训练更快</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,true)">C. 神经网络是"黑箱"，难以解释每一次判断的依据</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">D. 神经网络的准确率一定低于决策树</div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-fb"></div>
+  </div>
+</section>
+
+<!-- ===== Slide 7: Bagging ===== -->
+<section class="slide" id="slide7">
+  <div class="section-title"><span class="num orange">7</span> Bagging：并行训练，投票降方差</div>
+  <div class="section-subtitle">"三个臭皮匠，顶个诸葛亮"的数学实现</div>
+
+  <div class="content-block">
+    <h3>Bagging 的核心思想</h3>
+    <p><strong>Bagging（Bootstrap Aggregating，自助聚合）</strong> 的思路非常直觉：与其训练一个可能"过拟合"的强模型，不如训练多个"弱而不同"的模型，让它们<strong>投票</strong>决定最终答案。每个模型看问题的角度不同，综合起来就更稳定、更不容易犯错。</p>
+  </div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">原始训练集<br><small>N个样本</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">Bootstrap 采样<br><small>有放回抽N次<br>× M轮</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">M个模型<br><small>并行独立训练</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">投票/平均<br><small>最终预测</small></div>
+  </div>
+
+  <div class="card-row">
+    <div class="card"><div class="card-icon">🎲</div><h4>Bootstrap 自助采样</h4><p>从原始数据中<strong>有放回</strong>地随机抽取 N 个样本，形成一个新的训练集。重复 M 次，得到 M 个不同的训练集。每个样本约有 63.2% 的概率被选中，未被选中的作为"袋外样本"（OOB）可用于验证。</p></div>
+    <div class="card"><div class="card-icon">⚡</div><h4>并行训练</h4><p>M 个模型之间<strong>没有任何依赖</strong>，可以同时训练。在多核 CPU 或 GPU 上可以大幅加速。</p></div>
+    <div class="card"><div class="card-icon">📉</div><h4>降方差</h4><p>Bagging 主要<strong>降低的是方差</strong>（Variance）而非偏差（Bias）。直观理解：一个人判断可能偏激，十个人投票就更稳健。对决策树这种高方差模型效果尤其好。</p></div>
+  </div>
+</section>
+
+<!-- ===== Slide 8: Boosting ===== -->
+<section class="slide" id="slide8">
+  <div class="section-title"><span class="num orange">8</span> Boosting：序列训练，纠错降偏差</div>
+  <div class="section-subtitle">一个模型错了？下一个模型专门来补救</div>
+
+  <div class="content-block">
+    <h3>Boosting 的核心思想</h3>
+    <p><strong>Boosting（提升法）</strong> 的哲学和 Bagging 完全不同。它不是让模型"并行投票"，而是让模型<strong>一个接一个地学习</strong>，每个新模型都<strong>重点关注上一个模型犯过的错误</strong>。就像一个学生反复做错题本——第一遍错了的题目，第二遍重点练习。</p>
+  </div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--red-light);color:var(--red);">模型₁<br><small>均匀权重训练</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">找出错误<br><small>提高错样本权重</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">模型₂<br><small>纠错训练</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">再找错误<br><small>继续提权</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">加权投票<br><small>好模型权重大</small></div>
+  </div>
+
+  <div class="compare-row">
+    <div class="compare-col" style="border-left:4px solid var(--blue);">
+      <h4 style="color:var(--blue);">Bagging</h4>
+      <p>• 模型之间<strong>并行</strong>，互不依赖</p>
+      <p>• 每个模型权重<strong>相同</strong></p>
+      <p>• 主要<strong>降方差</strong></p>
+      <p>• 代表性：随机森林</p>
+      <p>• 不容易过拟合</p>
+    </div>
+    <div class="compare-col" style="border-left:4px solid var(--orange);">
+      <h4 style="color:var(--orange);">Boosting</h4>
+      <p>• 模型之间<strong>串行</strong>，后者依赖前者</p>
+      <p>• 好模型权重<strong>更大</strong></p>
+      <p>• 主要<strong>降偏差</strong></p>
+      <p>• 代表性：AdaBoost, XGBoost</p>
+      <p>• 可能过拟合，需要早停</p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>典型代表：AdaBoost 和 XGBoost</strong>
+    AdaBoost（Adaptive Boosting）是 Boosting 的经典实现，每次迭代调整样本权重，让后续模型更关注被错分的样本。XGBoost 是它的工程优化版，在 Kaggle 竞赛中几乎"统治"了表格数据赛道多年。
+  </div>
+</section>
+
+<!-- ===== Slide 9: 随机森林 ===== -->
+<section class="slide" id="slide9">
+  <div class="section-title"><span class="num orange">9</span> 随机森林：Bagging + 决策树 + 随机特征</div>
+  <div class="section-subtitle">把 Bagging 做到极致——连特征选择都随机化</div>
+
+  <div class="img-container">
+    <img src="images/ensemble_learning.png" alt="集成学习对比图" loading="lazy">
+    <div class="caption">图：Bagging 与 Boosting 的对比——并行 vs 串行，投票 vs 加权纠错</div>
+  </div>
+
+  <div class="content-block">
+    <h3>随机森林 = Bagging + 决策树 + 双重随机</h3>
+    <p>随机森林在普通 Bagging 的基础上，加了一层随机：<strong>每次分裂节点时，只从随机选取的一小部分特征中选择最优分裂特征</strong>。通常分类问题取 sqrt(p) 个特征，回归问题取 p/3 个特征。</p>
+  </div>
+
+  <div class="card-row">
+    <div class="card"><div class="card-icon">🎲</div><h4>样本随机</h4><p>每棵树用 Bootstrap 采样得到不同的训练集（和 Bagging 一样）。未抽中的约 37% 样本作为 OOB 验证。</p></div>
+    <div class="card"><div class="card-icon">🎯</div><h4>特征随机</h4><p>每个节点分裂时，只从随机选取的特征子集中选最优。这迫使每棵树"从不同角度看问题"，进一步降低树与树之间的相关性。</p></div>
+    <div class="card"><div class="card-icon">💪</div><h4>为什么效果好？</h4><p>单棵决策树容易过拟合（方差大），但很多棵"弱相关"的树投票后，方差大幅降低。即使每棵树不太完美，整体却出奇地稳健。</p></div>
+  </div>
+
+  <div class="callout success">
+    <strong>随机森林 vs 单棵决策树</strong>
+    单棵决策树：容易过拟合，换一批训练数据可能长出完全不同的树（高方差）。但训练快，可解释。<br>
+    随机森林：通过集成大幅降低方差，准确率稳定提升。缺点是可解释性下降——你不再能画出一棵"决策树"来解释模型，而是需要看"特征重要性"排名。
+  </div>
+
+  <div class="quiz-block">
+    <h3>🧠 课堂小测</h3>
+    <div class="quiz-question">随机森林相对于单棵决策树，主要降低了什么？</div>
+    <div class="quiz-options" id="quiz3">
+      <div class="quiz-option" onclick="checkQuiz('quiz3',this,false)">A. 偏差（Bias）</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz3',this,true)">B. 方差（Variance）</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz3',this,false)">C. 计算量</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz3',this,false)">D. 特征数量</div>
+    </div>
+    <div class="quiz-feedback" id="quiz3-fb"></div>
+  </div>
+</section>
+
+<!-- ===== Slide 10: 实验-四模型训练 ===== -->
+<section class="slide" id="slide10">
+  <div class="section-title"><span class="num purple">10</span> 实验：四模型同台对比</div>
+  <div class="section-subtitle">在同一份数据上，朴素贝叶斯、决策树、MLP、随机森林表现如何？</div>
+
+  <div class="content-block">
+    <h3>实验设计</h3>
+    <p>使用同一份电商客户数据集（1000条，特征：月消费、购买次数、注册天数、最近购买距今；标签：高/低价值客户），统一按 7:3 划分训练集和测试集，分别训练四个模型并对比。</p>
+  </div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">同一份数据<br><small>1000条</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">统一划分<br><small>训练700/测试300</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">分别训练<br><small>4个模型</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">统一评估<br><small>同指标对比</small></div>
+  </div>
+
+  <div class="content-block">
+    <h3>四模型简介</h3>
+    <table class="data-table">
+      <thead><tr><th>模型</th><th>类型</th><th>关键参数</th><th>训练时间</th><th>可解释性</th></tr></thead>
+      <tbody>
+        <tr><td><span class="tag blue">朴素贝叶斯</span></td><td>概率模型</td><td>拉普拉斯平滑 α=1</td><td>0.01s</td><td>⭐⭐⭐⭐⭐</td></tr>
+        <tr><td><span class="tag green">决策树</span></td><td>规则模型</td><td>max_depth=5, Gini</td><td>0.05s</td><td>⭐⭐⭐⭐⭐</td></tr>
+        <tr><td><span class="tag purple">MLP 神经网络</span></td><td>深度学习</td><td>2层×64神经元, ReLU</td><td>2.3s</td><td>⭐</td></tr>
+        <tr><td><span class="tag orange">随机森林</span></td><td>集成学习</td><td>100棵树, max_depth=8</td><td>1.8s</td><td>⭐⭐⭐</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout info">
+    <strong>为什么选这四个模型？</strong>
+    它们分别代表了四种不同的"学习哲学"：概率推理（贝叶斯）、规则归纳（决策树）、连接主义（MLP）、集成投票（随机森林）。对比它们能帮我们理解"没有银弹"——不同场景需要不同的工具。
+  </div>
+</section>
+
+<!-- ===== Slide 11: 对比分析 ===== -->
+<section class="slide" id="slide11">
+  <div class="section-title"><span class="num purple">11</span> 对比汇总与选型讨论</div>
+  <div class="section-subtitle">数据不会说谎——看看每个模型的实际表现</div>
+
+  <div class="content-block">
+    <h3>性能对比汇总表</h3>
+    <table class="data-table">
+      <thead><tr><th>模型</th><th>准确率</th><th>精确率</th><th>召回率</th><th>F1</th><th>训练耗时</th></tr></thead>
+      <tbody>
+        <tr><td>朴素贝叶斯</td><td>91.3%</td><td>82.5%</td><td>76.0%</td><td>79.1%</td><td>0.01s</td></tr>
+        <tr><td>决策树 (max_depth=5)</td><td>94.7%</td><td>87.5%</td><td>84.0%</td><td>85.7%</td><td>0.05s</td></tr>
+        <tr><td>MLP 神经网络</td><td>96.3%</td><td>90.2%</td><td>90.0%</td><td>90.1%</td><td>2.3s</td></tr>
+        <tr><td class="highlight">随机森林 (100棵树)</td><td class="highlight">97.0%</td><td class="highlight">93.5%</td><td class="highlight">91.8%</td><td class="highlight">92.6%</td><td>1.8s</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="content-block">
+    <h3>关键发现</h3>
+    <p><strong>1. 朴素贝叶斯垫底——</strong>不是算法不好，而是我们的特征之间有相关性（月消费和购买次数天然正相关），违背了"朴素"假设。在文本分类这种特征独立性更强的场景中它会好得多。</p>
+    <p><strong>2. MLP 和随机森林接近——</strong>在这个"表格数据"任务上，精心调参的 MLP 和随机森林差距不大。但 MLP 需要标准化、调参成本更高，而且完全不可解释。</p>
+    <p><strong>3. 随机森林最佳——</strong>在中等规模表格数据上，随机森林通常是最"省心"的选择：不需要标准化、不需要太多调参、效果好、有一定可解释性（特征重要性）。</p>
+  </div>
+
+  <div class="callout warning">
+    <strong>选型思考题</strong>
+    如果这是一个<strong>医疗诊断</strong>系统——模型说"你有病"或"你没病"将直接影响人的生命健康——你会选哪个模型？为什么？请从<strong>可解释性</strong>和<strong>召回率</strong>两个角度讨论。
+  </div>
+</section>
+
+<!-- ===== Slide 12: 偏差-方差·选型框架 ===== -->
+<section class="slide" id="slide12">
+  <div class="section-title"><span class="num red">12</span> 偏差-方差分解与选型框架</div>
+  <div class="section-subtitle">理解为什么没有"最好"的算法——只有"最适合"的算法</div>
+
+  <div class="img-container">
+    <img src="images/bias_variance.png" alt="偏差-方差权衡图" loading="lazy">
+    <div class="caption">图：偏差-方差权衡——总误差 = 偏差² + 方差 + 不可约误差</div>
+  </div>
+
+  <div class="card-row">
+    <div class="card" style="border-left:4px solid var(--red);">
+      <h4>偏差 Bias</h4>
+      <p>模型预测的<strong>平均值</strong>与真实值之间的差距。高偏差 = 模型太简单，学不到真实规律（欠拟合）。<br><span style="font-size:13px;">朴素贝叶斯通常偏差较高。</span></p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange);">
+      <h4>方差 Variance</h4>
+      <p>模型在不同训练集上预测结果的<strong>波动程度</strong>。高方差 = 模型太敏感，换一批数据结果就大变（过拟合）。<br><span style="font-size:13px;">单棵决策树通常方差较高。</span></p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--blue);">
+      <h4>不可约误差</h4>
+      <p>数据本身的噪音，任何模型都无法消除的部分。即使完美模型也有误差上限。<br><span style="font-size:13px;">比如客户的购买行为本身就存在随机性。</span></p>
+    </div>
+  </div>
+
+  <div class="content-block">
+    <h3>选型六维度框架</h3>
+    <table class="data-table">
+      <thead><tr><th>维度</th><th>朴素贝叶斯</th><th>决策树</th><th>MLP</th><th>随机森林</th></tr></thead>
+      <tbody>
+        <tr><td>准确率</td><td>⭐⭐</td><td>⭐⭐⭐</td><td>⭐⭐⭐⭐</td><td>⭐⭐⭐⭐⭐</td></tr>
+        <tr><td>训练速度</td><td>⭐⭐⭐⭐⭐</td><td>⭐⭐⭐⭐⭐</td><td>⭐⭐</td><td>⭐⭐⭐</td></tr>
+        <tr><td>可解释性</td><td>⭐⭐⭐⭐⭐</td><td>⭐⭐⭐⭐⭐</td><td>⭐</td><td>⭐⭐⭐</td></tr>
+        <tr><td>小数据适应</td><td>⭐⭐⭐⭐⭐</td><td>⭐⭐⭐</td><td>⭐</td><td>⭐⭐⭐⭐</td></tr>
+        <tr><td>调参难度</td><td>⭐⭐⭐⭐⭐</td><td>⭐⭐⭐⭐</td><td>⭐⭐</td><td>⭐⭐⭐</td></tr>
+        <tr><td>非线性拟合</td><td>⭐</td><td>⭐⭐⭐</td><td>⭐⭐⭐⭐⭐</td><td>⭐⭐⭐⭐</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="callout danger">
+    <strong>NFL 定理（No Free Lunch）</strong>
+    没有哪个算法在所有问题上都是最好的。一个算法在某类问题上表现好，必然在另一类问题上表现差。机器学习的核心能力不是"掌握最好的算法"，而是<strong>知道在什么场景下该用什么算法</strong>——这就是选型能力。
+  </div>
+</section>
+
+<!-- ===== Slide 13: 课程总结 ===== -->
+<section class="slide" id="slide13">
+  <div class="section-title"><span class="num red">🏁</span> 课程总结</div>
+  <div class="section-subtitle">回顾这80分钟：从概率到神经网络再到"三个臭皮匠"</div>
+
+  <div style="background:#fff;border-radius:14px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);margin-bottom:20px;">
+    <div style="font-size:var(--font-md);line-height:2.2;">
+      <p><strong>📐 朴素贝叶斯</strong> → 贝叶斯定理（先验×似然→后验）→ 条件独立假设 → 文本分类利器</p>
+      <p style="margin-left:20px;">↳ <strong>🧠 MLP 神经网络</strong> → 输入→隐藏→输出 → 激活函数 → 必须标准化 → 拟合强但黑箱</p>
+      <p style="margin-left:40px;">↳ <strong>🎒 集成学习</strong> → Bagging（并行投票降方差）→ Boosting（序列纠错降偏差）→ 随机森林（双重随机）</p>
+      <p style="margin-left:60px;">↳ <strong>🧪 四模型对比</strong> → 同数据同划分 → 随机森林最佳 → 但选型要综合考虑六维度</p>
+      <p style="margin-left:80px;">↳ <strong>🎯 选型心智</strong> → 偏差-方差分解 → 六维度框架 → NFL定理：没有银弹</p>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <strong>四个核心收获</strong>
+    <p style="margin-top:8px;">1. 朴素贝叶斯用概率来分类，训练极快，适合文本；但"朴素"假设在特征高度相关的场景下吃亏。</p>
+    <p>2. MLP 神经网络拟合能力强，能处理复杂的非线性关系，但代价是<strong>黑箱不可解释</strong>和对数据量、标准化的严格要求。</p>
+    <p>3. 集成学习的核心哲学：Bagging 让多个模型投票降方差，Boosting 让模型串行纠错降偏差，随机森林把两者结合做到极致。</p>
+    <p>4. <strong>没有最好的算法，只有最适合的算法。</strong>选型要综合考虑准确率、速度、可解释性、数据量、调参成本和业务场景（NFL定理）。</p>
+  </div>
+
+  <div class="quiz-block">
+    <h3>🧠 终极挑战</h3>
+    <div class="quiz-question">以下哪个说法最准确地描述了"集成学习"的核心思想？</div>
+    <div class="quiz-options" id="quiz4">
+      <div class="quiz-option" onclick="checkQuiz('quiz4',this,false)">A. 用一个非常复杂的模型代替多个简单模型</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz4',this,false)">B. 把所有算法的结果取平均数</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz4',this,true)">C. 组合多个弱模型形成一个强模型，通过投票或纠错提升整体性能</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz4',this,false)">D. 只使用最好的那个模型，丢弃其他的</div>
+    </div>
+    <div class="quiz-feedback" id="quiz4-fb"></div>
+  </div>
+
+  <div class="callout info" style="text-align:center;">
+    <strong>🎉 恭喜完成本次课程！</strong><br>
+    你现在已经理解了机器学习中三种截然不同的"学习范式"：概率驱动（贝叶斯）、连接主义（神经网络）、集体智慧（集成学习）。感兴趣的话，可以继续深入探索：深度学习（CNN/RNN）、梯度提升树（XGBoost/LightGBM）、贝叶斯网络等高级主题。
+  </div>
+</section>
+
+</main>
+
+<script>
+const totalSlides = 14;
+const slideIds = [];
+for (let i = 0; i < totalSlides; i++) slideIds.push('slide' + i);
+
+let currentSlide = 0;
+
+function goToSlide(index) {
+  slideIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  const target = document.getElementById('slide' + index);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
+    if (parseInt(item.dataset.slide) === index) item.classList.add('active');
+  });
+  document.getElementById('progressFill').style.width = (index / (totalSlides - 1) * 100) + '%';
+  document.getElementById('mainContent').scrollTop = 0;
+  currentSlide = index;
+}
+
+// 侧边栏点击
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    goToSlide(parseInt(this.dataset.slide));
+  });
+});
+
+// 键盘导航
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault();
+    if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (currentSlide > 0) goToSlide(currentSlide - 1);
+  } else if (e.key === 'Home') { e.preventDefault(); goToSlide(0); }
+  else if (e.key === 'End') { e.preventDefault(); goToSlide(totalSlides - 1); }
+});
+
+// 底部导航
+slideIds.forEach((id, idx) => {
+  if (idx === 0) return;
+  const slide = document.getElementById(id);
+  if (!slide) return;
+  const nav = document.createElement('div');
+  nav.className = 'bottom-nav';
+  nav.innerHTML = '<button class="btn-prev" onclick="goToSlide(' + (idx - 1) + ')">← 上一页</button>' +
+    '<span style="font-size:14px;color:var(--gray-600);align-self:center;">' + idx + ' / ' + (totalSlides - 1) + '</span>' +
+    '<button class="btn-next" onclick="goToSlide(' + (idx + 1) + ')">' + (idx < totalSlides - 1 ? '下一页 →' : '回到封面 🏠') + '</button>';
+  slide.appendChild(nav);
+});
+
+// 小测验
+function checkQuiz(quizId, optionEl, isCorrect) {
+  var quiz = document.getElementById(quizId);
+  var fb = document.getElementById(quizId + '-fb');
+  quiz.querySelectorAll('.quiz-option').forEach(function(opt) { opt.classList.remove('correct', 'wrong'); });
+  var msgs = {
+    'quiz1': { correct: '✅ 正确！"朴素"就是指条件独立假设——在给定类别的前提下，所有特征相互独立。', wrong: '❌ 再想想。"朴素"指的是算法做了一个简化的假设——所有特征在给定类别下是相互独立的。' },
+    'quiz2': { correct: '✅ 正确！神经网络的权重交织在一起，很难解释每个判断的依据，这是它与决策树、朴素贝叶斯最本质的区别。', wrong: '❌ 再想想。神经网络最大的痛点是"黑箱"——你无法像决策树那样画出清晰的判断规则。' },
+    'quiz3': { correct: '✅ 正确！Bagging（包括随机森林）主要通过集成多个模型来降低方差，使模型更稳定。', wrong: '❌ 再想想。多个模型投票的好处是让预测更稳定，降低的是方差而非偏差。' },
+    'quiz4': { correct: '✅ 正确！集成学习的本质就是"三个臭皮匠顶个诸葛亮"——组合多个弱模型形成强模型。', wrong: '❌ 再想想。集成学习的核心是"组合"多个模型，而非只用一个。' }
+  };
+  if (isCorrect) {
+    optionEl.classList.add('correct');
+    fb.className = 'quiz-feedback show';
+    fb.style.background = 'var(--green-light)'; fb.style.color = '#166534';
+    fb.textContent = msgs[quizId].correct;
+  } else {
+    optionEl.classList.add('wrong');
+    fb.className = 'quiz-feedback show';
+    fb.style.background = 'var(--red-light)'; fb.style.color = '#991b1b';
+    fb.textContent = msgs[quizId].wrong;
+  }
+}
+
+goToSlide(0);
+</script>
+
+</body>
+</html>
