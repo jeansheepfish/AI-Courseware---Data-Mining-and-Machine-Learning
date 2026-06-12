@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>聚类分析 — 高中AI课堂</title>
+<style>
+:root {
+  --blue:#2563eb;--blue-light:#dbeafe;--green:#16a34a;--green-light:#dcfce7;
+  --orange:#ea580c;--orange-light:#fff7ed;--red:#dc2626;--red-light:#fef2f2;
+  --purple:#7c3aed;--purple-light:#f5f3ff;--teal:#0d9488;--teal-light:#ccfbf1;
+  --gray-50:#f9fafb;--gray-100:#f3f4f6;--gray-200:#e5e7eb;--gray-300:#d1d5db;
+  --gray-600:#4b5563;--gray-700:#374151;--gray-800:#1f2937;--gray-900:#111827;
+  --sidebar-w:260px;--font-xl:32px;--font-lg:22px;--font-md:18px;--font-sm:15px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;background:var(--gray-50);color:var(--gray-800);display:flex;height:100vh;overflow:hidden;font-size:var(--font-md);line-height:1.7}
+.sidebar{width:var(--sidebar-w);min-width:var(--sidebar-w);background:linear-gradient(180deg,#1e3a5f 0%,#0f172a 100%);color:#fff;display:flex;flex-direction:column;z-index:10;box-shadow:4px 0 20px rgba(0,0,0,0.15)}
+.sidebar-header{padding:28px 20px 20px;border-bottom:1px solid rgba(255,255,255,0.12)}
+.sidebar-header h1{font-size:20px;font-weight:700;letter-spacing:.5px}
+.sidebar-header .subtitle{font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px}
+.sidebar-nav{flex:1;overflow-y:auto;padding:12px 0}
+.nav-section{margin-bottom:4px}
+.nav-section-title{padding:10px 20px 4px;font-size:11px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.4);font-weight:600}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 20px;cursor:pointer;transition:all .2s;border-left:3px solid transparent;font-size:14px;color:rgba(255,255,255,0.75);user-select:none}
+.nav-item:hover{background:rgba(255,255,255,0.08);color:#fff}
+.nav-item.active{background:rgba(255,255,255,0.12);border-left-color:#60a5fa;color:#fff;font-weight:600}
+.nav-item .icon{width:22px;text-align:center;font-size:15px;flex-shrink:0}
+.sidebar-footer{padding:14px 20px;border-top:1px solid rgba(255,255,255,0.12);font-size:12px;color:rgba(255,255,255,0.35)}
+.main{flex:1;overflow-y:auto;padding:0;scroll-behavior:smooth}
+.slide{display:none;min-height:100vh;padding:48px 56px 40px;animation:fadeSlideIn .4s ease}
+.slide.active{display:block}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.cover{flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(135deg,#eff6ff 0%,#f0fdf4 40%,#fef3c7 100%);min-height:100vh}
+.slide.active.cover{display:flex}
+.cover-icon{font-size:80px;margin-bottom:20px}
+.cover h1{font-size:46px;font-weight:800;background:linear-gradient(135deg,#1e3a5f,#2563eb);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.cover .tagline{font-size:var(--font-lg);color:var(--gray-600);margin-top:12px;max-width:600px}
+.cover .meta{margin-top:32px;display:flex;gap:24px;font-size:15px;color:var(--gray-600)}
+.cover .meta span{background:#fff;padding:6px 16px;border-radius:20px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.cover .start-btn{margin-top:36px;padding:14px 40px;font-size:19px;font-weight:600;background:var(--blue);color:#fff;border:none;border-radius:12px;cursor:pointer;transition:all .2s;box-shadow:0 4px 14px rgba(37,99,235,0.35)}
+.cover .start-btn:hover{background:#1d4ed8;transform:translateY(-2px);box-shadow:0 6px 20px rgba(37,99,235,0.45)}
+.section-title{font-size:var(--font-xl);font-weight:700;color:var(--gray-900);margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.section-title .num{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:12px;font-size:20px;font-weight:700;flex-shrink:0}
+.num.blue{background:var(--blue-light);color:var(--blue)}.num.green{background:var(--green-light);color:var(--green)}
+.num.orange{background:var(--orange-light);color:var(--orange)}.num.purple{background:var(--purple-light);color:var(--purple)}
+.num.red{background:var(--red-light);color:var(--red)}.num.teal{background:var(--teal-light);color:var(--teal)}
+.section-subtitle{font-size:16px;color:var(--gray-600);margin-bottom:28px}
+.content-block{margin-bottom:28px}
+.content-block h3{font-size:var(--font-lg);font-weight:700;color:var(--gray-800);margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--gray-200)}
+.content-block p{margin-bottom:10px;color:var(--gray-700)}
+.card-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:18px;margin-bottom:24px}
+.card{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);transition:all .2s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.1);transform:translateY(-2px)}
+.card .card-icon{font-size:36px;margin-bottom:10px}
+.card h4{font-size:var(--font-lg);font-weight:700;margin-bottom:6px}
+.card p{font-size:var(--font-sm);color:var(--gray-600);line-height:1.6}
+.callout{padding:18px 22px;border-radius:12px;margin-bottom:20px;font-size:var(--font-md);border-left:5px solid}
+.callout.info{background:var(--blue-light);border-color:var(--blue);color:#1e40af}
+.callout.success{background:var(--green-light);border-color:var(--green);color:#166534}
+.callout.warning{background:var(--orange-light);border-color:var(--orange);color:#9a3412}
+.callout.danger{background:var(--red-light);border-color:var(--red);color:#991b1b}
+.callout strong{display:block;margin-bottom:4px;font-size:var(--font-lg)}
+.img-container{margin:24px 0;text-align:center;background:#fff;border-radius:14px;padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200)}
+.img-container img{max-width:100%;height:auto;border-radius:8px}
+.img-container .caption{margin-top:10px;font-size:var(--font-sm);color:var(--gray-600);font-style:italic}
+.quiz-block{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);margin-bottom:24px}
+.quiz-block h3{margin-bottom:16px;font-size:var(--font-lg)}
+.quiz-question{font-size:var(--font-md);font-weight:600;margin-bottom:12px}
+.quiz-options{display:flex;flex-direction:column;gap:8px}
+.quiz-option{padding:12px 18px;border:2px solid var(--gray-200);border-radius:8px;cursor:pointer;transition:all .2s;user-select:none}
+.quiz-option:hover{border-color:var(--blue);background:#f8faff}
+.quiz-option.correct{border-color:var(--green);background:var(--green-light);font-weight:600}
+.quiz-option.wrong{border-color:var(--red);background:var(--red-light)}
+.quiz-feedback{margin-top:12px;padding:10px 16px;border-radius:8px;display:none;font-size:var(--font-sm)}
+.quiz-feedback.show{display:block}
+.data-table{width:100%;border-collapse:collapse;margin-bottom:20px;font-size:var(--font-sm);background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+.data-table th{background:var(--blue);color:#fff;padding:12px 16px;text-align:center;font-weight:600}
+.data-table td{padding:10px 16px;text-align:center;border-bottom:1px solid var(--gray-200)}
+.data-table tr:last-child td{border-bottom:none}
+.data-table .highlight{font-weight:700;background:var(--green-light)}
+.progress-bar{position:fixed;top:0;left:var(--sidebar-w);right:0;height:4px;background:var(--gray-200);z-index:20}
+.progress-fill{height:100%;background:var(--blue);transition:width .3s;border-radius:0 2px 2px 0}
+.bottom-nav{display:flex;justify-content:space-between;margin-top:40px;padding-top:20px;border-top:1px solid var(--gray-200)}
+.bottom-nav button{padding:10px 24px;font-size:var(--font-md);font-weight:600;border:none;border-radius:10px;cursor:pointer;transition:all .2s}
+.btn-prev{background:var(--gray-100);color:var(--gray-700)}.btn-prev:hover{background:var(--gray-200)}
+.btn-next{background:var(--blue);color:#fff}.btn-next:hover{background:#1d4ed8}
+.tag{display:inline-block;padding:3px 10px;border-radius:6px;font-size:12px;font-weight:600;margin-right:4px}
+.tag.blue{background:var(--blue-light);color:var(--blue)}.tag.green{background:var(--green-light);color:var(--green)}
+.tag.orange{background:var(--orange-light);color:var(--orange)}.tag.red{background:var(--red-light);color:var(--red)}
+.tag.purple{background:var(--purple-light);color:var(--purple)}
+.formula-box{background:#1e293b;color:#e2e8f0;padding:18px 24px;border-radius:10px;font-family:"SF Mono","Consolas","Courier New",monospace;font-size:var(--font-md);text-align:center;margin-bottom:20px;letter-spacing:1px}
+.flow-chart{display:flex;align-items:center;justify-content:center;gap:16px;flex-wrap:wrap;padding:20px;background:#fff;border-radius:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-bottom:24px}
+.flow-step{padding:14px 22px;border-radius:10px;font-weight:600;font-size:var(--font-md);text-align:center}
+.flow-arrow{font-size:24px;color:var(--gray-400)}
+.compare-row{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px}
+.compare-col{background:#fff;border-radius:14px;padding:24px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200)}
+.compare-col h4{text-align:center;margin-bottom:14px;font-size:var(--font-lg)}
+@media(max-width:900px){.sidebar{width:200px;min-width:200px}:root{--sidebar-w:200px}.slide{padding:32px 24px 28px}.cover h1{font-size:36px}.section-title{font-size:24px}.compare-row{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+
+<aside class="sidebar">
+  <div class="sidebar-header"><h1>聚类分析</h1><div class="subtitle">高中AI课堂 · 80分钟课件</div></div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section"><div class="nav-section-title">课程导航</div><div class="nav-item active" data-slide="0"><span class="icon">🏠</span> 封面</div></div>
+    <div class="nav-section"><div class="nav-section-title">第一部分 聚类基础</div>
+      <div class="nav-item" data-slide="1"><span class="icon">🔍</span> 分类 vs 聚类</div>
+      <div class="nav-item" data-slide="2"><span class="icon">🌐</span> 应用场景与算法分类</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">第二部分 K-Means</div>
+      <div class="nav-item" data-slide="3"><span class="icon">🎯</span> 目标函数 SSE</div>
+      <div class="nav-item" data-slide="4"><span class="icon">🔄</span> 四步迭代详解</div>
+      <div class="nav-item" data-slide="5"><span class="icon">⚠️</span> 三大注意事项</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">第三部分 选K与评估</div>
+      <div class="nav-item" data-slide="6"><span class="icon">💪</span> 肘部法</div>
+      <div class="nav-item" data-slide="7"><span class="icon">📏</span> 轮廓系数与综合策略</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">第四部分 实验</div>
+      <div class="nav-item" data-slide="8"><span class="icon">🧪</span> 客户分群全流程</div>
+      <div class="nav-item" data-slide="9"><span class="icon">📊</span> 簇画像与业务策略</div>
+    </div>
+    <div class="nav-section"><div class="nav-section-title">扩展</div>
+      <div class="nav-item" data-slide="10"><span class="icon">🌲</span> 层次聚类·DBSCAN</div>
+      <div class="nav-item" data-slide="11"><span class="icon">🏁</span> 课程总结</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">QoderWork · 高中AI课堂</div>
+</aside>
+
+<main class="main" id="mainContent">
+
+<!-- Slide 0: Cover -->
+<section class="slide active cover" id="slide0">
+  <div class="cover-icon">🔮</div>
+  <h1>聚类分析</h1>
+  <p class="tagline">没有标签怎么办？让数据自己"说话"——理解无监督学习的核心思想</p>
+  <div class="meta"><span>📚 高中AI课堂</span><span>⏱️ 80分钟</span><span>🎯 适合投屏教学</span></div>
+  <button class="start-btn" onclick="goToSlide(1)">开始学习 →</button>
+</section>
+
+<!-- Slide 1: 分类 vs 聚类 -->
+<section class="slide" id="slide1">
+  <div class="section-title"><span class="num blue">1</span> 分类 vs 聚类：一字之差，天壤之别</div>
+  <div class="section-subtitle">一个需要标签，一个不需要——这是机器学习最根本的分水岭</div>
+
+  <div class="img-container">
+    <img src="images/clustering_basics.png" alt="分类与聚类对比图" loading="lazy">
+    <div class="caption">图：分类（有监督）vs 聚类（无监督）——最大区别在于是否需要标签</div>
+  </div>
+
+  <div class="compare-row">
+    <div class="compare-col" style="border-left:4px solid var(--blue);">
+      <h4 style="color:var(--blue);">分类 Classification</h4>
+      <p style="margin-bottom:8px;">• <strong>有监督学习</strong>——需要标注好的标签</p>
+      <p style="margin-bottom:8px;">• 训练数据：(特征, 标签) 成对出现</p>
+      <p style="margin-bottom:8px;">• 目标：学会从特征到标签的映射</p>
+      <p style="margin-bottom:8px;">• 类比：老师给了一批标好答案的题，学生学会解题方法</p>
+      <p>• <strong>类别是事先定义好的</strong></p>
+    </div>
+    <div class="compare-col" style="border-left:4px solid var(--green);">
+      <h4 style="color:var(--green);">聚类 Clustering</h4>
+      <p style="margin-bottom:8px;">• <strong>无监督学习</strong>——不需要任何标签</p>
+      <p style="margin-bottom:8px;">• 训练数据：只有特征，没有标签</p>
+      <p style="margin-bottom:8px;">• 目标：发现数据中"自然形成"的分组</p>
+      <p style="margin-bottom:8px;">• 类比：一堆没有分类标签的书，按内容相似度自动整理成几堆</p>
+      <p>• <strong>类别是算法自己"发现"的</strong></p>
+    </div>
+  </div>
+
+  <div class="callout info">
+    <strong>核心问题</strong>
+    聚类回答的问题是：<strong>"哪些样本彼此更像？"</strong>它不关心样本"叫什么名字"（那是分类的事情），只关心"谁和谁是一伙的"。想象你把一堆水果按颜色和大小分成几堆——你不需要知道它们叫"苹果"还是"橙子"，你只需发现红色的小果子和黄色的大果子自然地分成了两组。
+  </div>
+</section>
+
+<!-- Slide 2: 应用场景与算法分类 -->
+<section class="slide" id="slide2">
+  <div class="section-title"><span class="num blue">2</span> 应用场景与四大算法家族</div>
+  <div class="section-subtitle">聚类不只是课本里的概念——它在商业、医疗、图像中无处不在</div>
+
+  <div class="card-row">
+    <div class="card"><div class="card-icon">🛒</div><h4>客户分群</h4><p>电商平台根据消费金额、购买频率、品类偏好，将客户自动分成"高价值""潜力股""沉睡用户"等群体，精准制定差异化营销策略。<br><span class="tag green">最经典应用</span></p></div>
+    <div class="card"><div class="card-icon">🩺</div><h4>医疗分析</h4><p>根据患者的各项体检指标，自动发现具有相似症状模式的病人群体，辅助医生判断疾病亚型或制定个性化治疗方案。</p></div>
+    <div class="card"><div class="card-icon">🖼️</div><h4>图像分割与压缩</h4><p>将图像中的像素按颜色聚类，把成千上万种颜色压缩成几十种代表性颜色，或把图像分割成前景/背景等不同区域。</p></div>
+    <div class="card"><div class="card-icon">🔐</div><h4>异常检测</h4><p>正常数据形成密集的簇，异常点则远离所有簇。信用卡欺诈、网络入侵检测中，聚类常被用作第一道筛选。</p></div>
+  </div>
+
+  <div class="content-block"><h3>四大聚类算法家族</h3></div>
+  <div class="card-row">
+    <div class="card" style="border-top:3px solid var(--blue);"><h4>① 划分法 Partitioning</h4><p>将数据划分为 K 个互不重叠的簇。代表：<strong>K-Means</strong>。最常用、最快速，但需事先指定 K 值。</p></div>
+    <div class="card" style="border-top:3px solid var(--green);"><h4>② 层次法 Hierarchical</h4><p>自底向上或自顶向下构建簇的层级树。不需要指定 K，产生<strong>树状图（Dendrogram）</strong>，可视化效果好但计算量大。</p></div>
+    <div class="card" style="border-top:3px solid var(--orange);"><h4>③ 密度法 Density-based</h4><p>把数据密集的区域定义为簇。代表：<strong>DBSCAN</strong>。能发现任意形状的簇，还能自动识别噪声点。</p></div>
+    <div class="card" style="border-top:3px solid var(--purple);"><h4>④ 模型法 Model-based</h4><p>假设数据由若干概率分布混合生成。代表：<strong>高斯混合模型（GMM）</strong>。给出每个样本属于各簇的<strong>概率</strong>而非硬分配。</p></div>
+  </div>
+
+  <div class="callout warning"><strong>本节主线</strong>K-Means 是最经典的划分聚类算法，也是我们这节课的重点。后面扩展部分会简要介绍层次聚类和 DBSCAN，帮你建立"聚类不止一种方法"的认知。</div>
+</section>
+
+<!-- Slide 3: K-Means 目标函数 -->
+<section class="slide" id="slide3">
+  <div class="section-title"><span class="num green">3</span> K-Means 的目标：让簇内尽可能"紧凑"</div>
+  <div class="section-subtitle">算法需要一个数学标准来判断"什么是好的聚类"</div>
+
+  <div class="content-block">
+    <h3>SSE：簇内误差平方和</h3>
+    <p>K-Means 的目标非常直觉：<strong>同一个簇内的点离得越近越好，不同簇离得越远越好。</strong>数学上，它最小化 <strong>SSE（Sum of Squared Errors，误差平方和）</strong>——每个点到它所属簇中心的距离的平方，全部加起来。SSE 越小，簇内越紧凑。</p>
+  </div>
+
+  <div class="formula-box">SSE = Σᵢ Σₓ∈Cᵢ ‖x − μᵢ‖²<br>其中 μᵢ 是第 i 个簇的中心，Cᵢ 是第 i 个簇的所有点</div>
+
+  <div class="callout info">
+    <strong>直观理解 SSE</strong>
+    想象每个簇的成员围绕在"队长"（簇中心）周围。如果队员都很靠近队长，SSE 就小。如果有人跑得很远，SSE 就大。K-Means 要做的，就是不断调整"谁是队长"和"谁跟哪个队长"，让所有队伍都尽可能紧凑。
+  </div>
+
+  <div class="quiz-block">
+    <h3>🧠 课堂小测</h3>
+    <div class="quiz-question">K-Means 的优化目标是什么？</div>
+    <div class="quiz-options" id="quiz1">
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">A. 让不同簇之间的距离尽可能小</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,true)">B. 最小化簇内点到簇中心的距离平方和（SSE）</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">C. 让每个簇的样本数量尽可能相等</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz1',this,false)">D. 最大化所有样本之间的距离</div>
+    </div>
+    <div class="quiz-feedback" id="quiz1-fb"></div>
+  </div>
+</section>
+
+<!-- Slide 4: 四步迭代 -->
+<section class="slide" id="slide4">
+  <div class="section-title"><span class="num green">4</span> K-Means 四步迭代：看得见的收敛过程</div>
+  <div class="section-subtitle">算法不复杂——四步循环，直到"队伍不再变动"</div>
+
+  <div class="img-container">
+    <img src="images/kmeans_iteration.png" alt="K-Means四步迭代示意图" loading="lazy">
+    <div class="caption">图：K-Means 的四步迭代——初始化→分配→更新→重复，直到收敛</div>
+  </div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">① 初始化<br><small>随机选K个点<br>作为初始中心</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">② 分配<br><small>每个点归属<br>最近的中心</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">③ 更新<br><small>重新计算<br>每个簇的中心</small></div>
+    <div class="flow-arrow">↻</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">④ 重复②③<br><small>直到中心不再<br>变化（收敛）</small></div>
+  </div>
+
+  <div class="card-row">
+    <div class="card"><h4>第①步：初始化</h4><p>从数据中<strong>随机选择 K 个点</strong>作为初始簇中心。这步非常关键——不同的初始值可能导致完全不同的聚类结果。常用的改进方法是 <strong>K-Means++</strong>，它让初始中心尽量彼此远离。</p></div>
+    <div class="card"><h4>第②步：分配（Assignment）</h4><p>遍历每一个数据点，计算它到 K 个中心的距离，把它<strong>分配给距离最近的那个簇</strong>。距离通常用欧氏距离（"直线距离"）。</p></div>
+    <div class="card"><h4>第③步：更新（Update）</h4><p>每个簇重新计算自己的"中心"——取簇内所有点的<strong>平均值</strong>作为新中心。这就是 "K-Means" 中 "Means"（均值）的由来。</p></div>
+    <div class="card"><h4>第④步：收敛</h4><p>重复②③，直到所有簇中心的变化小于某个阈值（比如移动不到 0.001）。算法保证 SSE 单调递减，最终收敛到<strong>局部最优</strong>——但不一定是全局最优。</p></div>
+  </div>
+</section>
+
+<!-- Slide 5: 三大注意事项 -->
+<section class="slide" id="slide5">
+  <div class="section-title"><span class="num green">5</span> K-Means 三大注意事项</div>
+  <div class="section-subtitle">K-Means 好用，但不是"万能钥匙"——使用前必须知道的三个前提</div>
+
+  <div class="card-row">
+    <div class="card" style="border-left:4px solid var(--red);">
+      <div class="card-icon">📏</div><h4>① 必须先标准化！</h4>
+      <p>K-Means 依赖<strong>距离</strong>计算。如果特征量纲不同（年龄 0-100，收入 0-100000），收入会完全统治距离计算，年龄几乎不起作用。这与神经网络的情况完全相同。</p>
+      <p style="margin-top:8px;font-size:13px;color:var(--gray-600);">💡 永远在聚类前做 Z-score 标准化：x' = (x − μ) / σ</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--orange);">
+      <div class="card-icon">🎲</div><h4>② 初始值敏感</h4>
+      <p>不同的随机初始中心可能导致完全不同的聚类结果。K-Means 只能保证局部最优（离初始值最近的"山谷"），不能保证全局最优（整个地图的最低点）。</p>
+      <p style="margin-top:8px;font-size:13px;color:var(--gray-600);">💡 实践中多跑几次取最佳 SSE，或使用 K-Means++ 初始化。</p>
+    </div>
+    <div class="card" style="border-left:4px solid var(--blue);">
+      <div class="card-icon">🔵</div><h4>③ 球形假设</h4>
+      <p>K-Means 默认簇是<strong>球形的、大小相近的</strong>。因为它是基于"到中心距离"来分组的——如果数据是拉长的月牙形或不规则形状，K-Means 可能会给出反直觉的结果。</p>
+      <p style="margin-top:8px;font-size:13px;color:var(--gray-600);">💡 遇到非球形数据，考虑 DBSCAN 或谱聚类。</p>
+    </div>
+  </div>
+
+  <div class="callout warning">
+    <strong>K 值必须事先指定</strong>
+    K-Means 不会自己"想"该分成几类——你必须告诉它 K 等于几。这看起来是个限制，但在很多商业场景中这反而是优势：业务方通常很清楚"我们需要把客户分成 3 类还是 5 类"。下一节我们讲如何科学地选 K。
+  </div>
+</section>
+
+<!-- Slide 6: 肘部法 -->
+<section class="slide" id="slide6">
+  <div class="section-title"><span class="num orange">6</span> 肘部法：SSE 曲线的"拐点"就是最佳 K</div>
+  <div class="section-subtitle">增加 K 总会降低 SSE，但什么时候"性价比"开始下降？</div>
+
+  <div class="img-container">
+    <img src="images/elbow_silhouette.png" alt="肘部法和轮廓系数示意图" loading="lazy">
+    <div class="caption">图：肘部法（左）找 SSE 拐点 + 轮廓系数（右）验证聚类质量</div>
+  </div>
+
+  <div class="content-block">
+    <h3>为什么"一直增加 K"不行？</h3>
+    <p>如果你把 K 设成样本总数（每个点自成一组），SSE 会变成 0——但这毫无意义，等于没有聚类。肘部法的逻辑是：<strong>找到那个"再增加 K 收益也不大"的转折点</strong>。就像人弯曲手臂时，肘关节就是那个"弯得最厉害"的位置。</p>
+  </div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">分别尝试<br>K=1,2,3,…,10</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">记录每个 K<br>对应的 SSE</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">画 K-SSE 曲线<br>找"肘点"</div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">肘点 =<br>推荐 K 值</div>
+  </div>
+
+  <div class="callout info">
+    <strong>肘部法的局限性</strong>
+    有时 SSE 曲线下降得很平滑，没有明显的"肘部"——这时候就需要结合其他方法（如轮廓系数）和业务经验来综合判断。选 K 既是科学，也是一门艺术。
+  </div>
+</section>
+
+<!-- Slide 7: 轮廓系数 -->
+<section class="slide" id="slide7">
+  <div class="section-title"><span class="num orange">7</span> 轮廓系数与综合选 K 策略</div>
+  <div class="section-subtitle">肘部法给出候选，轮廓系数做验证，业务拍板做决定</div>
+
+  <div class="content-block">
+    <h3>轮廓系数（Silhouette Score）</h3>
+    <p>轮廓系数衡量每个样本"和自己簇的成员有多近"（紧凑度 a）以及"和最近的其他簇有多远"（分离度 b）。取值范围 [-1, 1]，越接近 1 越好。</p>
+  </div>
+
+  <div class="formula-box">轮廓系数 s = (b − a) / max(a, b)<br>a = 样本与同簇其他点的平均距离（越小越好）<br>b = 样本与最近邻簇所有点的平均距离（越大越好）</div>
+
+  <div class="card-row">
+    <div class="card"><h4>s ≈ 1</h4><p>样本在自己的簇里非常紧凑，且远离其他簇。<strong>完美的聚类。</strong></p></div>
+    <div class="card"><h4>s ≈ 0</h4><p>样本在两个簇的边界上，分到哪边都差不多。<strong>模糊地带。</strong></p></div>
+    <div class="card"><h4>s ≈ -1</h4><p>样本可能被分错了簇——它和其他簇的成员更近。<strong>需要警惕。</strong></p></div>
+  </div>
+
+  <div class="callout success">
+    <strong>综合选 K 三步策略</strong>
+    <strong>第一步（统计）</strong>：跑肘部法，圈出 2-3 个候选 K 值。<br>
+    <strong>第二步（验证）</strong>：对每个候选 K 计算平均轮廓系数，选最高的。<br>
+    <strong>第三步（业务）</strong>：最终由业务方确认——"分成 4 类在营销方案上是否可行？每个簇的业务含义是否清晰？"<br>
+    <em>缺一不可。</em>
+  </div>
+</section>
+
+<!-- Slide 8: 客户分群实验 -->
+<section class="slide" id="slide8">
+  <div class="section-title"><span class="num purple">8</span> 实验：客户分群全流程</div>
+  <div class="section-subtitle">从零开始，完整走一遍 K-Means 聚类的实战流程</div>
+
+  <div class="flow-chart">
+    <div class="flow-step" style="background:var(--red-light);color:var(--red);">① 标准化<br><small>Z-score</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">② K 搜索<br><small>肘部法+轮廓</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--green-light);color:var(--green);">③ 聚类<br><small>K-Means K=4</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">④ 可视化<br><small>PCA降维+雷达图</small></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">⑤ 命名<br><small>业务策略</small></div>
+  </div>
+
+  <div class="content-block">
+    <h3>数据集说明</h3>
+    <p>模拟某电商平台 500 名客户，四个特征：<strong>月均消费金额、年购买次数、客单价、最近购买距今（天）</strong>。全部标准化后，肘部法和轮廓系数一致指向 <strong>K=4</strong>。</p>
+  </div>
+
+  <div class="content-block">
+    <h3>PCA 降维可视化</h3>
+    <p>我们有 4 个特征，无法直接在纸上画出，因此使用 <strong>PCA（主成分分析）</strong>把 4 维压缩到 2 维，画在平面上。PCA 会保留数据中"最重要的差异方向"，让我们能直观看到 4 个簇的分隔情况。需要注意：降维后的距离不等于原始距离，仅供参考。</p>
+  </div>
+
+  <div class="callout info">
+    <strong>实验核心结论</strong>
+    K=4 时轮廓系数 0.48（四个模型中最高），肘部法在 K=4 处有明显拐点。四类客户在月消费、购买频率、客单价上差异显著——下面我们来给每个簇"画像"。
+  </div>
+</section>
+
+<!-- Slide 9: 簇画像与业务策略 -->
+<section class="slide" id="slide9">
+  <div class="section-title"><span class="num purple">9</span> 簇画像与业务策略建议</div>
+  <div class="section-subtitle">聚类做完不是终点——"这个簇代表什么？"才是真正的价值</div>
+
+  <div class="content-block"><h3>四类客户簇画像表</h3></div>
+  <table class="data-table">
+    <thead><tr><th>簇</th><th>月消费(元)</th><th>年购买次数</th><th>客单价(元)</th><th>最近购买(天)</th><th>人数</th><th>命名</th></tr></thead>
+    <tbody>
+      <tr><td><span class="tag green">簇 0</span></td><td>2150</td><td>32</td><td>580</td><td>3</td><td>68</td><td style="font-weight:700;color:var(--green);">🌟 核心VIP</td></tr>
+      <tr><td><span class="tag blue">簇 1</span></td><td>680</td><td>15</td><td>310</td><td>8</td><td>142</td><td style="font-weight:700;color:var(--blue);">📈 活跃潜力股</td></tr>
+      <tr><td><span class="tag orange">簇 2</span></td><td>180</td><td>4</td><td>120</td><td>45</td><td>195</td><td style="font-weight:700;color:var(--orange);">💤 沉睡大众</td></tr>
+      <tr><td><span class="tag red">簇 3</span></td><td>890</td><td>8</td><td>620</td><td>28</td><td>95</td><td style="font-weight:700;color:var(--red);">🎯 高客单流失预警</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card-row">
+    <div class="card" style="border-left:4px solid var(--green);"><h4>🌟 核心VIP（68人）</h4><p>月消费最高、购买最频繁、最近刚买过。贡献了约 40% 营收。策略：专属客服、新品优先体验、年度感恩礼。</p></div>
+    <div class="card" style="border-left:4px solid var(--blue);"><h4>📈 活跃潜力股（142人）</h4><p>消费中等偏上、购买规律、客单价有提升空间。策略：满减券引导提高客单价、交叉销售推荐高利润商品。</p></div>
+    <div class="card" style="border-left:4px solid var(--orange);"><h4>💤 沉睡大众（195人）</h4><p>消费低、买得少、已经 45 天没来了。策略：大额唤醒券、推送个性化推荐、短信/邮件召回。</p></div>
+    <div class="card" style="border-left:4px solid var(--red);"><h4>🎯 高客单流失预警（95人）</h4><p>买的东西贵但频率低、最近购买距今 28 天。策略：定向调查为什么不回购？升级售后服务、会员日专享。</p></div>
+  </div>
+
+  <div class="callout success">
+    <strong>从数据到决策</strong>
+    聚类做完后的价值在于<strong>业务可解释性</strong>——每个簇能讲出一个"故事"：他们是谁？有什么特点？该用什么策略？如果聚类结果在业务上讲不通，即使轮廓系数再高，也需要反思：是特征选错了？K 选错了？还是需要换算法？
+  </div>
+</section>
+
+<!-- Slide 10: 其他聚类算法 -->
+<section class="slide" id="slide10">
+  <div class="section-title"><span class="num red">10</span> 扩展：层次聚类与 DBSCAN</div>
+  <div class="section-subtitle">K-Means 不是唯一答案——不同形状的数据需要不同的工具</div>
+
+  <div class="img-container">
+    <img src="images/clustering_comparison.png" alt="三种聚类算法对比" loading="lazy">
+    <div class="caption">图：K-Means、层次聚类、DBSCAN 三种算法对比——各有各的主场</div>
+  </div>
+
+  <div class="compare-row">
+    <div class="compare-col" style="border-left:4px solid var(--green);">
+      <h4 style="color:var(--green);">层次聚类 Hierarchical</h4>
+      <p style="margin-bottom:8px;">• 不需要预先指定 K 值</p>
+      <p style="margin-bottom:8px;">• 产生<strong>树状图（Dendrogram）</strong></p>
+      <p style="margin-bottom:8px;">• 合并策略有 3 种 Linkage：</p>
+      <p style="margin:4px 0 4px 16px;">— Single：取最近点距离</p>
+      <p style="margin:4px 0 4px 16px;">— Complete：取最远点距离</p>
+      <p style="margin:4px 0 4px 16px;">— Ward：最小化合并后方差增量</p>
+      <p style="margin-bottom:8px;">• 计算复杂度 O(N² log N)，不适合超大样本</p>
+      <p>• <strong>适合：</strong>需要可视化聚类层级结构的场景</p>
+    </div>
+    <div class="compare-col" style="border-left:4px solid var(--orange);">
+      <h4 style="color:var(--orange);">DBSCAN 密度聚类</h4>
+      <p style="margin-bottom:8px;">• 不需要指定 K 值，但需要指定 <strong>Eps（邻域半径）</strong>和 <strong>MinPts（最小点数）</strong></p>
+      <p style="margin-bottom:8px;">• 核心概念：</p>
+      <p style="margin:4px 0 4px 16px;">— 核心点：邻域内 ≥ MinPts 个点</p>
+      <p style="margin:4px 0 4px 16px;">— 边界点：邻域内 &lt; MinPts，但在某个核心点的邻域内</p>
+      <p style="margin:4px 0 4px 16px;">— 噪声点：既不是核心也不是边界</p>
+      <p style="margin-bottom:8px;">• <strong>最大优势：</strong>能发现任意形状的簇 + 自动标记噪声</p>
+      <p>• <strong>适合：</strong>地理空间数据、异常检测</p>
+    </div>
+  </div>
+
+  <div class="content-block"><h3>三算法对比总表</h3></div>
+  <table class="data-table">
+    <thead><tr><th>特性</th><th>K-Means</th><th>层次聚类</th><th>DBSCAN</th></tr></thead>
+    <tbody>
+      <tr><td>需指定K？</td><td>✅ 是</td><td>❌ 否（可后切）</td><td>❌ 否（自动发现）</td></tr>
+      <tr><td>簇形状</td><td>球形</td><td>任意（依赖Linkage）</td><td>任意形状</td></tr>
+      <tr><td>噪声处理</td><td>强制分配所有点</td><td>强制分配所有点</td><td>✅ 标记为噪声</td></tr>
+      <tr><td>大数据速度</td><td>⭐⭐⭐⭐⭐ 快</td><td>⭐⭐ 慢</td><td>⭐⭐⭐⭐ 较快</td></tr>
+      <tr><td>可解释性</td><td>⭐⭐⭐⭐</td><td>⭐⭐⭐⭐⭐ 树状图</td><td>⭐⭐⭐</td></tr>
+      <tr><td>经典场景</td><td>客户分群</td><td>生物学分类</td><td>地理/异常检测</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<!-- Slide 11: 总结 -->
+<section class="slide" id="slide11">
+  <div class="section-title"><span class="num red">🏁</span> 课程总结</div>
+  <div class="section-subtitle">回顾这80分钟：从"无标签怎么分类"到"给每个客户一个名字"</div>
+
+  <div style="background:#fff;border-radius:14px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);margin-bottom:20px;">
+    <div style="font-size:var(--font-md);line-height:2.2;">
+      <p><strong>🔍 聚类基础</strong> → 分类 vs 聚类（有监督 vs 无监督）→ 四大应用场景 → 四大算法家族</p>
+      <p style="margin-left:20px;">↳ <strong>🎯 K-Means</strong> → SSE 目标函数 → 四步迭代（初始化→分配→更新→重复）→ 三大注意（标准化/初始值/球形假设）</p>
+      <p style="margin-left:40px;">↳ <strong>📏 选 K 与评估</strong> → 肘部法（SSE拐点）→ 轮廓系数（紧凑度 vs 分离度）→ 综合三步策略</p>
+      <p style="margin-left:60px;">↳ <strong>🧪 客户分群实验</strong> → 标准化 → K搜索 → 聚类 → PCA可视化 → 簇画像 → 业务策略</p>
+      <p style="margin-left:80px;">↳ <strong>🌲 算法全景</strong> → 层次聚类（树状图+Linkage）→ DBSCAN（密度+噪声）→ 三算法对比</p>
+    </div>
+  </div>
+
+  <div class="callout success">
+    <strong>四个核心收获</strong>
+    <p style="margin-top:8px;">1. 聚类是<strong>无监督学习</strong>——不需要标签，算法自己从数据中发现自然分组。分类需要有标签，聚类不需要。</p>
+    <p>2. K-Means 是聚类的主力算法。核心是"点到中心距离平方和最小化"，四步迭代直到收敛。但必须先<strong>标准化</strong>。</p>
+    <p>3. 选 K 是科学+艺术：肘部法找候选 → 轮廓系数做验证 → <strong>业务可解释性最终拍板</strong>。技术指标再好，业务上讲不通也没用。</p>
+    <p>4. K-Means 不是唯一选择。层次聚类适合看层级关系，DBSCAN 适合任意形状的簇和含噪声的数据。<strong>不同数据形态需要不同的聚类工具。</strong></p>
+  </div>
+
+  <div class="quiz-block">
+    <h3>🧠 终极挑战</h3>
+    <div class="quiz-question">以下哪个场景最适合使用 DBSCAN 而非 K-Means？</div>
+    <div class="quiz-options" id="quiz2">
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">A. 电商客户分成4个消费等级</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,true)">B. 在地图上找出犯罪高发区域，并标记孤立的异常事件</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">C. 将学生按考试成绩分成优/良/中/差四档</div>
+      <div class="quiz-option" onclick="checkQuiz('quiz2',this,false)">D. 按身高和体重将运动员分成3个体型类别</div>
+    </div>
+    <div class="quiz-feedback" id="quiz2-fb"></div>
+  </div>
+
+  <div class="callout info" style="text-align:center;">
+    <strong>🎉 恭喜完成本次课程！</strong><br>
+    你现在已经理解了聚类分析的核心思想：在没有标签的情况下，让数据自己"抱团"，然后人类给每个团一个有意义的名字。这是机器学习和数据挖掘中最强大的探索性工具之一。继续深入的话，可以探索高斯混合模型（GMM）、谱聚类（Spectral Clustering）、以及聚类在推荐系统中的应用。
+  </div>
+</section>
+
+</main>
+
+<script>
+var totalSlides=12,slideIds=[],currentSlide=0;
+for(var i=0;i<totalSlides;i++)slideIds.push('slide'+i);
+
+function goToSlide(index){
+  slideIds.forEach(function(id){var el=document.getElementById(id);if(el)el.classList.remove('active')});
+  var target=document.getElementById('slide'+index);
+  if(target)target.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(function(item){item.classList.remove('active');if(parseInt(item.dataset.slide)===index)item.classList.add('active')});
+  document.getElementById('progressFill').style.width=(index/(totalSlides-1)*100)+'%';
+  document.getElementById('mainContent').scrollTop=0;
+  currentSlide=index;
+}
+
+document.querySelectorAll('.nav-item').forEach(function(item){item.addEventListener('click',function(){goToSlide(parseInt(this.dataset.slide))})});
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='ArrowRight'||e.key==='ArrowDown'||e.key===' '){e.preventDefault();if(currentSlide<totalSlides-1)goToSlide(currentSlide+1)}
+  else if(e.key==='ArrowLeft'||e.key==='ArrowUp'){e.preventDefault();if(currentSlide>0)goToSlide(currentSlide-1)}
+  else if(e.key==='Home'){e.preventDefault();goToSlide(0)}
+  else if(e.key==='End'){e.preventDefault();goToSlide(totalSlides-1)}
+});
+
+slideIds.forEach(function(id,idx){
+  if(idx===0)return;
+  var slide=document.getElementById(id);
+  if(!slide)return;
+  var nav=document.createElement('div');
+  nav.className='bottom-nav';
+  nav.innerHTML='<button class="btn-prev" onclick="goToSlide('+(idx-1)+')">← 上一页</button><span style="font-size:14px;color:var(--gray-600);align-self:center;">'+idx+' / '+(totalSlides-1)+'</span><button class="btn-next" onclick="goToSlide('+(idx+1)+')">'+(idx<totalSlides-1?'下一页 →':'回到封面 🏠')+'</button>';
+  slide.appendChild(nav);
+});
+
+function checkQuiz(quizId,optionEl,isCorrect){
+  var quiz=document.getElementById(quizId);
+  var fb=document.getElementById(quizId+'-fb');
+  quiz.querySelectorAll('.quiz-option').forEach(function(opt){opt.classList.remove('correct','wrong')});
+  var msgs={
+    'quiz1':{correct:'✅ 正确！K-Means 的目标是最小化每个点到其所属簇中心的距离平方和，让簇内尽可能紧凑。',wrong:'❌ 再想想。K-Means 希望簇内点离中心越近越好，所以是最小化簇内距离平方和（SSE）。'},
+    'quiz2':{correct:'✅ 正确！DBSCAN 擅长发现任意形状的密集区域并标记噪声，非常适合地理空间数据的犯罪热点分析和异常事件检测。',wrong:'❌ 再想想。DBSCAN 的核心优势是发现任意形状的簇和识别噪声点，所以最适合地理空间数据和异常检测。'}
+  };
+  if(isCorrect){optionEl.classList.add('correct');fb.className='quiz-feedback show';fb.style.background='var(--green-light)';fb.style.color='#166534';fb.textContent=msgs[quizId].correct}
+  else{optionEl.classList.add('wrong');fb.className='quiz-feedback show';fb.style.background='var(--red-light)';fb.style.color='#991b1b';fb.textContent=msgs[quizId].wrong}
+}
+
+goToSlide(0);
+</script>
+
+</body>
+</html>
