@@ -1,0 +1,1393 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分类与决策树 — 初中AI课堂</title>
+<style>
+/* ===== 全局 ===== */
+:root {
+  --blue: #2563eb;
+  --blue-light: #dbeafe;
+  --green: #16a34a;
+  --green-light: #dcfce7;
+  --orange: #ea580c;
+  --orange-light: #fff7ed;
+  --red: #dc2626;
+  --red-light: #fef2f2;
+  --purple: #7c3aed;
+  --purple-light: #f5f3ff;
+  --gray-50: #f9fafb;
+  --gray-100: #f3f4f6;
+  --gray-200: #e5e7eb;
+  --gray-300: #d1d5db;
+  --gray-600: #4b5563;
+  --gray-700: #374151;
+  --gray-800: #1f2937;
+  --gray-900: #111827;
+  --sidebar-w: 260px;
+  --font-xl: 32px;
+  --font-lg: 22px;
+  --font-md: 18px;
+  --font-sm: 15px;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", system-ui, sans-serif;
+  background: var(--gray-50);
+  color: var(--gray-800);
+  display: flex;
+  height: 100vh;
+  overflow: hidden;
+  font-size: var(--font-md);
+  line-height: 1.7;
+}
+
+/* ===== 侧边栏 ===== */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: linear-gradient(180deg, #1e3a5f 0%, #0f172a 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  z-index: 10;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.15);
+}
+.sidebar-header {
+  padding: 28px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.12);
+}
+.sidebar-header h1 {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.sidebar-header .subtitle {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin-top: 4px;
+}
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 0;
+}
+.nav-section {
+  margin-bottom: 6px;
+}
+.nav-section-title {
+  padding: 10px 20px 4px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: rgba(255,255,255,0.4);
+  font-weight: 600;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+  border-left: 3px solid transparent;
+  font-size: 15px;
+  color: rgba(255,255,255,0.75);
+  user-select: none;
+}
+.nav-item:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+.nav-item.active {
+  background: rgba(255,255,255,0.12);
+  border-left-color: #60a5fa;
+  color: #fff;
+  font-weight: 600;
+}
+.nav-item .icon {
+  width: 22px;
+  text-align: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+.sidebar-footer {
+  padding: 14px 20px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+  font-size: 12px;
+  color: rgba(255,255,255,0.35);
+}
+
+/* ===== 主内容区 ===== */
+.main {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+.slide {
+  display: none;
+  min-height: 100vh;
+  padding: 48px 56px 40px;
+  animation: fadeSlideIn 0.4s ease;
+}
+.slide.active {
+  display: block;
+}
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ===== 封面 ===== */
+.cover {
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 40%, #fff7ed 100%);
+  min-height: 100vh;
+}
+.slide.active.cover {
+  display: flex;
+}
+.cover-icon {
+  font-size: 80px;
+  margin-bottom: 20px;
+}
+.cover h1 {
+  font-size: 52px;
+  font-weight: 800;
+  background: linear-gradient(135deg, #1e3a5f, #2563eb);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.cover .tagline {
+  font-size: var(--font-lg);
+  color: var(--gray-600);
+  margin-top: 12px;
+  max-width: 600px;
+}
+.cover .meta {
+  margin-top: 32px;
+  display: flex;
+  gap: 24px;
+  font-size: 15px;
+  color: var(--gray-600);
+}
+.cover .meta span {
+  background: #fff;
+  padding: 6px 16px;
+  border-radius: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.cover .start-btn {
+  margin-top: 36px;
+  padding: 14px 40px;
+  font-size: 19px;
+  font-weight: 600;
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 14px rgba(37,99,235,0.35);
+}
+.cover .start-btn:hover {
+  background: #1d4ed8;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(37,99,235,0.45);
+}
+
+/* ===== 内容排版 ===== */
+.section-title {
+  font-size: var(--font-xl);
+  font-weight: 700;
+  color: var(--gray-900);
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-title .num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.num.blue { background: var(--blue-light); color: var(--blue); }
+.num.green { background: var(--green-light); color: var(--green); }
+.num.orange { background: var(--orange-light); color: var(--orange); }
+.num.purple { background: var(--purple-light); color: var(--purple); }
+.num.red { background: var(--red-light); color: var(--red); }
+
+.section-subtitle {
+  font-size: 16px;
+  color: var(--gray-600);
+  margin-bottom: 28px;
+}
+.content-block {
+  margin-bottom: 28px;
+}
+.content-block h3 {
+  font-size: var(--font-lg);
+  font-weight: 700;
+  color: var(--gray-800);
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--gray-200);
+}
+.content-block p {
+  margin-bottom: 10px;
+  color: var(--gray-700);
+}
+
+/* ===== 卡片 ===== */
+.card-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+  margin-bottom: 24px;
+}
+.card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-200);
+  transition: all 0.2s;
+}
+.card:hover {
+  box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+.card .card-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+.card h4 {
+  font-size: var(--font-lg);
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.card p {
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  line-height: 1.6;
+}
+
+/* ===== 高亮框 ===== */
+.callout {
+  padding: 18px 22px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+  font-size: var(--font-md);
+  border-left: 5px solid;
+}
+.callout.info {
+  background: var(--blue-light);
+  border-color: var(--blue);
+  color: #1e40af;
+}
+.callout.success {
+  background: var(--green-light);
+  border-color: var(--green);
+  color: #166534;
+}
+.callout.warning {
+  background: var(--orange-light);
+  border-color: var(--orange);
+  color: #9a3412;
+}
+.callout.danger {
+  background: var(--red-light);
+  border-color: var(--red);
+  color: #991b1b;
+}
+.callout strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--font-lg);
+}
+
+/* ===== 图片容器 ===== */
+.img-container {
+  margin: 24px 0;
+  text-align: center;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-200);
+}
+.img-container img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.img-container .caption {
+  margin-top: 10px;
+  font-size: var(--font-sm);
+  color: var(--gray-600);
+  font-style: italic;
+}
+
+/* ===== 交互式决策树演示 ===== */
+.tree-demo {
+  background: #fff;
+  border-radius: 14px;
+  padding: 28px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 24px;
+}
+.tree-demo h3 {
+  text-align: center;
+  margin-bottom: 20px;
+  font-size: var(--font-lg);
+}
+.tree-question {
+  background: var(--blue-light);
+  padding: 16px 24px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: var(--font-lg);
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+.tree-options {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+.tree-option {
+  padding: 12px 28px;
+  border: 2px solid var(--gray-300);
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: var(--font-md);
+  font-weight: 600;
+  transition: all 0.2s;
+  user-select: none;
+}
+.tree-option:hover {
+  border-color: var(--blue);
+  background: var(--blue-light);
+}
+.tree-option.selected {
+  border-color: var(--blue);
+  background: var(--blue-light);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.2);
+}
+.tree-result {
+  margin-top: 18px;
+  padding: 16px 24px;
+  border-radius: 10px;
+  text-align: center;
+  font-size: var(--font-lg);
+  font-weight: 700;
+  display: none;
+}
+.tree-result.show {
+  display: block;
+  animation: fadeSlideIn 0.3s ease;
+}
+.tree-result.high {
+  background: var(--green-light);
+  color: #166534;
+}
+.tree-result.low {
+  background: var(--orange-light);
+  color: #9a3412;
+}
+
+/* ===== 小测验 ===== */
+.quiz-block {
+  background: #fff;
+  border-radius: 14px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  border: 1px solid var(--gray-200);
+  margin-bottom: 24px;
+}
+.quiz-block h3 {
+  margin-bottom: 16px;
+  font-size: var(--font-lg);
+}
+.quiz-question {
+  font-size: var(--font-md);
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quiz-option {
+  padding: 12px 18px;
+  border: 2px solid var(--gray-200);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+}
+.quiz-option:hover {
+  border-color: var(--blue);
+  background: #f8faff;
+}
+.quiz-option.correct {
+  border-color: var(--green);
+  background: var(--green-light);
+  font-weight: 600;
+}
+.quiz-option.wrong {
+  border-color: var(--red);
+  background: var(--red-light);
+}
+.quiz-feedback {
+  margin-top: 12px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  display: none;
+  font-size: var(--font-sm);
+}
+.quiz-feedback.show {
+  display: block;
+}
+
+/* ===== 表格 ===== */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: var(--font-sm);
+  background: #fff;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.data-table th {
+  background: var(--blue);
+  color: #fff;
+  padding: 12px 16px;
+  text-align: center;
+  font-weight: 600;
+}
+.data-table td {
+  padding: 10px 16px;
+  text-align: center;
+  border-bottom: 1px solid var(--gray-200);
+}
+.data-table tr:last-child td {
+  border-bottom: none;
+}
+.data-table .highlight {
+  font-weight: 700;
+  background: var(--green-light);
+}
+
+/* ===== 进度条 ===== */
+.progress-bar {
+  position: fixed;
+  top: 0;
+  left: var(--sidebar-w);
+  right: 0;
+  height: 4px;
+  background: var(--gray-200);
+  z-index: 20;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--blue);
+  transition: width 0.3s;
+  border-radius: 0 2px 2px 0;
+}
+
+/* ===== 底部导航 ===== */
+.bottom-nav {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 40px;
+  padding-top: 20px;
+  border-top: 1px solid var(--gray-200);
+}
+.bottom-nav button {
+  padding: 10px 24px;
+  font-size: var(--font-md);
+  font-weight: 600;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-prev {
+  background: var(--gray-100);
+  color: var(--gray-700);
+}
+.btn-prev:hover {
+  background: var(--gray-200);
+}
+.btn-next {
+  background: var(--blue);
+  color: #fff;
+}
+.btn-next:hover {
+  background: #1d4ed8;
+}
+
+/* ===== 标签/徽章 ===== */
+.tag {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 4px;
+}
+.tag.blue { background: var(--blue-light); color: var(--blue); }
+.tag.green { background: var(--green-light); color: var(--green); }
+.tag.orange { background: var(--orange-light); color: var(--orange); }
+.tag.red { background: var(--red-light); color: var(--red); }
+
+/* ===== 公式展示 ===== */
+.formula-box {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 18px 24px;
+  border-radius: 10px;
+  font-family: "SF Mono", "Consolas", "Courier New", monospace;
+  font-size: var(--font-md);
+  text-align: center;
+  margin-bottom: 20px;
+  letter-spacing: 1px;
+}
+
+/* ===== 流程图 ===== */
+.flow-chart {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 20px;
+  background: #fff;
+  border-radius: 14px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  margin-bottom: 24px;
+}
+.flow-step {
+  padding: 14px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: var(--font-md);
+  text-align: center;
+}
+.flow-arrow {
+  font-size: 24px;
+  color: var(--gray-400);
+}
+
+/* 响应式 */
+@media (max-width: 900px) {
+  .sidebar { width: 200px; min-width: 200px; }
+  :root { --sidebar-w: 200px; }
+  .slide { padding: 32px 24px 28px; }
+  .cover h1 { font-size: 36px; }
+  .section-title { font-size: 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 进度条 -->
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width: 0%"></div></div>
+
+<!-- 侧边栏 -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <h1>分类与决策树</h1>
+    <div class="subtitle">初中AI课堂 · 80分钟课件</div>
+  </div>
+  <nav class="sidebar-nav" id="sidebarNav">
+    <div class="nav-section">
+      <div class="nav-section-title">课程导航</div>
+      <div class="nav-item active" data-slide="0"><span class="icon">🏠</span> 封面</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">第一部分</div>
+      <div class="nav-item" data-slide="1"><span class="icon">📋</span> 分类问题概述</div>
+      <div class="nav-item" data-slide="2"><span class="icon">🎯</span> 四要素详解</div>
+      <div class="nav-item" data-slide="3"><span class="icon">🔀</span> 训练集 vs 测试集</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">第二部分</div>
+      <div class="nav-item" data-slide="4"><span class="icon">🌳</span> 决策树原理</div>
+      <div class="nav-item" data-slide="5"><span class="icon">✂️</span> 分裂与停止</div>
+      <div class="nav-item" data-slide="6"><span class="icon">🕹️</span> 互动：模拟决策树</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">第三部分</div>
+      <div class="nav-item" data-slide="7"><span class="icon">📊</span> 混淆矩阵</div>
+      <div class="nav-item" data-slide="8"><span class="icon">📐</span> 评估指标体系</div>
+      <div class="nav-item" data-slide="9"><span class="icon">⚠️</span> 准确率陷阱</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">第四部分</div>
+      <div class="nav-item" data-slide="10"><span class="icon">🧪</span> 实验：客户价值分类</div>
+      <div class="nav-item" data-slide="11"><span class="icon">📈</span> 实验结果分析</div>
+    </div>
+    <div class="nav-section">
+      <div class="nav-section-title">第五部分</div>
+      <div class="nav-item" data-slide="12"><span class="icon">🔍</span> 过拟合与调参</div>
+      <div class="nav-item" data-slide="13"><span class="icon">🏁</span> 课程总结</div>
+    </div>
+  </nav>
+  <div class="sidebar-footer">QoderWork · 初中AI课堂</div>
+</aside>
+
+<!-- 主内容区 -->
+<main class="main" id="mainContent">
+
+  <!-- ===== 封面 Slide 0 ===== -->
+  <section class="slide active cover" id="slide0">
+    <div class="cover-icon">🌳</div>
+    <h1>分类与决策树</h1>
+    <p class="tagline">从数据中学习规则，让机器做出判断——用一棵"树"来理解人工智能如何分类</p>
+    <div class="meta">
+      <span>📚 初中AI课堂</span>
+      <span>⏱️ 80分钟</span>
+      <span>🎯 适合投屏教学</span>
+    </div>
+    <button class="start-btn" onclick="goToSlide(1)">开始学习 →</button>
+  </section>
+
+  <!-- ===== Slide 1: 分类问题概述 ===== -->
+  <section class="slide" id="slide1">
+    <div class="section-title"><span class="num blue">1</span> 分类问题概述</div>
+    <div class="section-subtitle">什么是分类？机器如何像人一样"认东西"？</div>
+
+    <div class="content-block">
+      <h3>生活中的分类</h3>
+      <p>每天早上，你打开手机看一眼天气——"今天会下雨吗？"这是一个分类问题：<strong>下雨</strong> 或 <strong>不下雨</strong>，二选一。你收到一条短信——"这是垃圾短信还是正常短信？"同样是分类。医生看一张X光片——"这片子有没有异常？"也是分类。</p>
+      <p>在人工智能中，<strong>分类（Classification）</strong> 就是让机器根据输入的信息，自动判断它属于哪一类。它是机器学习中最基础、应用最广泛的问题类型之一。</p>
+    </div>
+
+    <div class="callout info">
+      <strong>核心定义</strong>
+      分类：给定输入 <em>x</em>（特征），预测它的输出 <em>y</em>（类别标签）。当类别只有两个时，称为<strong>二分类</strong>；当类别有多个时，称为<strong>多分类</strong>。
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <div class="card-icon">📧</div>
+        <h4>垃圾邮件检测</h4>
+        <p>输入：邮件内容<br>输出：「垃圾邮件」或「正常邮件」<br><span class="tag blue">二分类</span></p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🩺</div>
+        <h4>疾病筛查</h4>
+        <p>输入：体检指标数据<br>输出：「健康」或「需要复查」<br><span class="tag blue">二分类</span></p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🛒</div>
+        <h4>客户分层</h4>
+        <p>输入：消费记录、浏览行为<br>输出：「高价值」「中价值」「低价值」<br><span class="tag green">多分类</span></p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📸</div>
+        <h4>图像识别</h4>
+        <p>输入：一张图片的像素<br>输出：「猫」「狗」「鸟」……<br><span class="tag green">多分类</span></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 2: 四要素详解 ===== -->
+  <section class="slide" id="slide2">
+    <div class="section-title"><span class="num blue">2</span> 四要素详解</div>
+    <div class="section-subtitle">构建一个分类模型，需要哪些"原材料"？</div>
+
+    <div class="img-container">
+      <img src="images/classification_overview.png" alt="分类问题四要素示意图" loading="lazy">
+      <div class="caption">图：分类问题的四个核心要素——特征、标签、训练集、测试集</div>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <div class="card-icon">🔤</div>
+        <h4>特征（Feature）</h4>
+        <p>用来描述每个样本的<strong>属性</strong>。比如判断客户价值时，特征可以是：月消费金额、购买频率、注册时长、最近一次购买距今多少天。</p>
+        <p style="margin-top:8px; font-size:13px; color:var(--gray-600);">类比：判断一个人是否适合打篮球，特征就是身高、体重、弹跳力。</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">🏷️</div>
+        <h4>标签（Label）</h4>
+        <p>我们希望模型预测的<strong>答案</strong>。标签是已知的、正确的分类结果。在训练阶段，每个样本都需要有人工标注的标签。</p>
+        <p style="margin-top:8px; font-size:13px; color:var(--gray-600);">类比：老师批改过的试卷上的分数，就是每道题的"标签"。</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📚</div>
+        <h4>训练集（Training Set）</h4>
+        <p>用于<strong>教</strong>模型"学习"的数据。模型从训练集的（特征 + 标签）中寻找规律。</p>
+        <p style="margin-top:8px; font-size:13px; color:var(--gray-600);">类比：课本上的例题，用来学习解题方法。</p>
+      </div>
+      <div class="card">
+        <div class="card-icon">📝</div>
+        <h4>测试集（Test Set）</h4>
+        <p>用于<strong>检验</strong>模型学得好不好的数据。模型在训练时<strong>不能看到</strong>测试集。</p>
+        <p style="margin-top:8px; font-size:13px; color:var(--gray-600);">类比：期末考试卷，题目不能和作业一模一样，否则就是作弊。</p>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <strong>趣味比喻：学生备考</strong>
+      特征 = 题目条件（已知数），标签 = 正确答案，训练集 = 平时作业（做完可以看答案），测试集 = 期末考试（考完才能知道对不对）。如果让模型提前"偷看"测试集的答案，那它只是背答案而不是真学会——这叫<strong>数据泄露</strong>，是机器学习中的大忌！
+    </div>
+  </section>
+
+  <!-- ===== Slide 3: 训练集 vs 测试集 ===== -->
+  <section class="slide" id="slide3">
+    <div class="section-title"><span class="num blue">3</span> 训练集与测试集为什么必须分开？</div>
+    <div class="section-subtitle">理解机器学习中最重要的一条铁律</div>
+
+    <div class="content-block">
+      <h3>一个让人警醒的故事</h3>
+      <p>假设你是一名数学老师。你给学生布置了10道完全一样的练习题，让他们反复做。一周后期末考，你还是出了同样的10道题。学生全部得了满分。请问：这能证明学生真正<strong>学会了数学</strong>吗？</p>
+      <p>不能。他们只是<strong>背下了答案</strong>。真正检验学习效果，必须用他们<strong>没见过的题目</strong>。</p>
+    </div>
+
+    <div class="callout danger">
+      <strong>核心原则：训练集和测试集必须严格分离</strong>
+      模型在训练过程中绝对不能"看到"测试集的任何信息。如果把测试集的数据混入训练，模型就会"作弊"——它记住了答案而不是学会了规律。这种现象叫<strong>过拟合</strong>（Overfitting），我们会在后面详细讲解。
+    </div>
+
+    <div class="flow-chart">
+      <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">全部数据<br><small>100%</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--green-light);color:var(--green);">训练集<br><small>70%~80%</small><br>用于学习</div>
+      <div class="flow-arrow">+</div>
+      <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">测试集<br><small>20%~30%</small><br>用于验证</div>
+    </div>
+
+    <div class="quiz-block">
+      <h3>🧠 课堂小测</h3>
+      <div class="quiz-question">为什么要将数据划分为训练集和测试集？</div>
+      <div class="quiz-options" id="quiz1">
+        <div class="quiz-option" onclick="checkQuiz('quiz1', this, false)">A. 让模型多练习几次，提高准确率</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz1', this, false)">B. 为了把数据分成两份，方便存储</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz1', this, true)">C. 用训练集学习规律，用测试集检验真正的泛化能力</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz1', this, false)">D. 测试集的数据不重要，可以扔掉</div>
+      </div>
+      <div class="quiz-feedback" id="quiz1-fb"></div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 4: 决策树原理 ===== -->
+  <section class="slide" id="slide4">
+    <div class="section-title"><span class="num green">4</span> 决策树原理</div>
+    <div class="section-subtitle">用"如果……那么……"的规则，像玩20个问题一样做分类</div>
+
+    <div class="content-block">
+      <h3>从日常直觉到数学算法</h3>
+      <p>你玩过"20个问题"的游戏吗？一个人心里想一个东西，另一个人通过问"是/否"问题来猜。好的提问策略总是从<strong>最能缩小范围</strong>的问题开始——比如先问"它是活的吗？"而不是"它是蓝色的吗？"</p>
+      <p>决策树正是这个思路的数学实现。它用一连串的 <strong>IF-THEN 规则</strong>，从根节点出发，沿着分支不断提问，最终到达一个叶子节点——也就是分类结果。</p>
+    </div>
+
+    <div class="img-container">
+      <img src="images/decision_tree.png" alt="决策树结构示意图" loading="lazy">
+      <div class="caption">图：一棵典型的决策树——从根节点开始，按条件分支，最终到达叶节点（分类结果）</div>
+    </div>
+
+    <div class="callout success">
+      <strong>IF-THEN 规则的直觉</strong>
+      一条从根到叶子的路径，就是一条分类规则。例如：<br>
+      <em>IF 月消费 > 500元 AND 最近30天有购买 THEN 预测为「高价值客户」</em><br>
+      决策树的优点在于<strong>可解释性强</strong>——你可以清楚地告诉别人"为什么做出这个判断"，而不像某些黑箱模型那样让人摸不着头脑。
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <h4>根节点（Root）</h4>
+        <p>整棵树的起点，包含全部训练数据。选择<strong>最有效</strong>的特征进行第一次分裂。</p>
+      </div>
+      <div class="card">
+        <h4>内部节点（Internal）</h4>
+        <p>中间的决策点，每个节点对某个特征进行测试，根据结果走向不同的分支。</p>
+      </div>
+      <div class="card">
+        <h4>叶节点（Leaf）</h4>
+        <p>最终的分类结果。到达叶节点后不再分裂，输出该节点的"多数类别"作为预测。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 5: 分裂标准与停止条件 ===== -->
+  <section class="slide" id="slide5">
+    <div class="section-title"><span class="num green">5</span> 分裂标准与递归构建</div>
+    <div class="section-subtitle">树怎么"长"出来？怎样选择最好的问题？</div>
+
+    <div class="content-block">
+      <h3>怎样选择"最好的"分裂特征？</h3>
+      <p>决策树在每个节点面临一个关键问题：用哪个特征来分裂数据最好？评判标准有两个经典方法：</p>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <h4>信息增益（ID3/C4.5）</h4>
+        <p>源自信息论中的<strong>熵</strong>（Entropy）概念。熵衡量数据的"混乱程度"——如果一堆数据里正负样本各一半，熵最大（最混乱）；如果全是同一类，熵为零（最纯净）。</p>
+        <p style="margin-top:8px;">信息增益 = 分裂前的熵 − 分裂后的加权平均熵。增益越大，说明这次分裂<strong>让数据变得更纯净</strong>，越值得选。</p>
+      </div>
+      <div class="card">
+        <h4>基尼系数（Gini / CART）</h4>
+        <p>另一种衡量"不纯度"的指标。Gini 越小，数据越纯净。计算比信息增益稍简单，是 CART 决策树默认的方法。</p>
+        <p style="margin-top:8px; font-size:13px; color:var(--gray-600);">💡 课堂提示：初中阶段只需理解"选能最好地区分不同类别的特征"即可，具体的数学公式不要求掌握。</p>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>递归构建 + 停止条件</h3>
+      <p>决策树的构建是一个<strong>递归</strong>过程：在每个节点选最优特征 → 分裂数据 → 在子节点重复此过程。但树不能无限生长，必须设置<strong>停止条件</strong>：</p>
+    </div>
+
+    <div class="flow-chart">
+      <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">节点中所有样本<br>都属于同一类？</div>
+      <div class="flow-arrow">→ 是 →</div>
+      <div class="flow-step" style="background:var(--green-light);color:var(--green);">停止，创建叶节点 ✅</div>
+    </div>
+    <div class="flow-chart" style="margin-top:8px;">
+      <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">所有特征<br>都用完了？</div>
+      <div class="flow-arrow">→ 是 →</div>
+      <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">停止，取多数类 ⚠️</div>
+    </div>
+    <div class="flow-chart" style="margin-top:8px;">
+      <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">树的深度<br>达到上限？</div>
+      <div class="flow-arrow">→ 是 →</div>
+      <div class="flow-step" style="background:var(--red-light);color:var(--red);">停止，防止过深 🛑</div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 6: 互动决策树 ===== -->
+  <section class="slide" id="slide6">
+    <div class="section-title"><span class="num green">6</span> 互动体验：模拟决策树分类</div>
+    <div class="section-subtitle">动手试一试——如果你是决策树，会怎么判断？</div>
+
+    <div class="tree-demo">
+      <h3>🕹️ 客户价值分类器</h3>
+      <p style="text-align:center;margin-bottom:16px;color:var(--gray-600);">假设你是某电商平台的AI，需要判断一个新客户是否属于"高价值客户"。请根据以下信息做出判断：</p>
+
+      <div id="treeStep1">
+        <div class="tree-question">第一步：该客户的月均消费金额是否超过 500 元？</div>
+        <div class="tree-options">
+          <div class="tree-option" onclick="treeStep(1, 'yes')">✅ 是，超过500元</div>
+          <div class="tree-option" onclick="treeStep(1, 'no')">❌ 否，不超过500元</div>
+        </div>
+      </div>
+
+      <div id="treeStep2" style="display:none;">
+        <div class="tree-question" id="treeQ2"></div>
+        <div class="tree-options">
+          <div class="tree-option" onclick="treeStep(2, 'yes')">✅ 是</div>
+          <div class="tree-option" onclick="treeStep(2, 'no')">❌ 否</div>
+        </div>
+      </div>
+
+      <div id="treeResult" class="tree-result"></div>
+      <button id="treeReset" style="display:none;margin:16px auto 0;padding:10px 20px;font-size:15px;border:2px solid var(--gray-300);border-radius:8px;background:#fff;cursor:pointer;" onclick="resetTree()">🔄 再试一次</button>
+    </div>
+
+    <div class="callout info">
+      <strong>思考题</strong>
+      如果让你来设计这棵决策树，你会选择"月消费金额"作为第一个问题，还是"注册时长"？为什么？请和旁边的同学讨论一下：<strong>什么样的特征应该放在树的上层？</strong>
+    </div>
+  </section>
+
+  <!-- ===== Slide 7: 混淆矩阵 ===== -->
+  <section class="slide" id="slide7">
+    <div class="section-title"><span class="num orange">7</span> 混淆矩阵</div>
+    <div class="section-subtitle">模型做对了多少？做错了多少？一张表看清楚</div>
+
+    <div class="content-block">
+      <h3>模型也会"犯错误"——而且有两种不同的错法</h3>
+      <p>分类模型做出预测后，和真实标签对比，有四种可能的结果。把这四种结果放进一个 2×2 的表格，就是<strong>混淆矩阵（Confusion Matrix）</strong>——它虽然名字叫"混淆"，但一点都不难理解。</p>
+    </div>
+
+    <div class="img-container">
+      <img src="images/confusion_matrix.png" alt="混淆矩阵示意图" loading="lazy">
+      <div class="caption">图：混淆矩阵的四个象限——TP（真正例）、FP（假正例）、FN（假负例）、TN（真负例）</div>
+    </div>
+
+    <div class="card-row">
+      <div class="card" style="border-left:4px solid var(--green);">
+        <h4>TP 真正例 ✅</h4>
+        <p>预测为"高价值"，实际也是"高价值"。<br><strong>模型判断正确！</strong></p>
+        <p style="font-size:13px;color:var(--gray-600);">类比：天气预报说会下雨，果然下了。</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--red);">
+        <h4>FP 假正例 ❌</h4>
+        <p>预测为"高价值"，实际是"低价值"。<br><strong>虚惊一场——误报！</strong></p>
+        <p style="font-size:13px;color:var(--gray-600);">类比：火警报警器响了，结果只是有人烧糊了饭。</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--red);">
+        <h4>FN 假负例 ❌</h4>
+        <p>预测为"低价值"，实际是"高价值"。<br><strong>漏掉了——漏报！</strong></p>
+        <p style="font-size:13px;color:var(--gray-600);">类比：体检没查出问题，但其实有病。</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--green);">
+        <h4>TN 真负例 ✅</h4>
+        <p>预测为"低价值"，实际也是"低价值"。<br><strong>模型判断正确！</strong></p>
+        <p style="font-size:13px;color:var(--gray-600);">类比：天气预报说不会下雨，果然没下。</p>
+      </div>
+    </div>
+
+    <div class="callout warning">
+      <strong>为什么关心 FP 和 FN？</strong>
+      两种错误的代价可能完全不同！在疾病筛查中，FN（漏诊）比 FP（误诊）可怕得多——宁可让人多跑一趟复查（FP），也不能放走一个真正的病人（FN）。在垃圾邮件检测中，FP（把正常邮件判为垃圾）比 FN（漏掉一封垃圾邮件）更让人恼火——你可能因此错过一封重要的工作邮件。
+    </div>
+  </section>
+
+  <!-- ===== Slide 8: 评估指标体系 ===== -->
+  <section class="slide" id="slide8">
+    <div class="section-title"><span class="num orange">8</span> 评估指标体系</div>
+    <div class="section-subtitle">准确率、精确率、召回率、F1——四个维度衡量模型好坏</div>
+
+    <div class="content-block">
+      <h3>光看"准确率"不够</h3>
+      <p>假设你在一个1000人的学校里找10个隐藏的"卧底"。你只要对每个人都说"不是卧底"，你的准确率就是 99%！但你没有找到任何一个真正的卧底——这个模型毫无用处。</p>
+      <p>因此，我们需要多个指标来<strong>全面评估</strong>模型的表现。</p>
+    </div>
+
+    <div class="card-row">
+      <div class="card">
+        <h4>准确率 Accuracy</h4>
+        <div class="formula-box">(TP + TN) / (TP+TN+FP+FN)</div>
+        <p>所有预测中，<strong>正确的比例</strong>。最直观，但在数据不平衡时容易误导人。</p>
+      </div>
+      <div class="card">
+        <h4>精确率 Precision</h4>
+        <div class="formula-box">TP / (TP + FP)</div>
+        <p>预测为"正"的样本中，<strong>真正是正</strong>的比例。衡量"<strong>宁缺毋滥</strong>"——我说你是高价值客户，你真的是吗？</p>
+      </div>
+      <div class="card">
+        <h4>召回率 Recall</h4>
+        <div class="formula-box">TP / (TP + FN)</div>
+        <p>真正的正样本中，<strong>被找出来的比例</strong>。衡量"<strong>宁滥勿缺</strong>"——真正的高价值客户，我找全了吗？</p>
+      </div>
+      <div class="card">
+        <h4>F1 分数</h4>
+        <div class="formula-box">2 × P × R / (P + R)</div>
+        <p>精确率和召回率的<strong>调和平均</strong>。当两者需要平衡时使用，越接近1越好。</p>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <strong>记忆口诀</strong>
+      精确率 Precision =「我说是，真的对吗？」（宁可少说，说就要对）<br>
+      召回率 Recall =「真的是，我都找全了吗？」（宁可多找，不能漏掉）
+    </div>
+
+    <div class="quiz-block">
+      <h3>🧠 快速判断</h3>
+      <div class="quiz-question">新冠检测中，哪个指标最重要？</div>
+      <div class="quiz-options" id="quiz2">
+        <div class="quiz-option" onclick="checkQuiz('quiz2', this, false)">A. 准确率最重要，因为要看整体表现</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz2', this, true)">B. 召回率最重要，因为不能漏掉任何一个感染者</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz2', this, false)">C. 精确率最重要，因为不能冤枉健康人</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz2', this, false)">D. F1最重要，因为要面面俱到</div>
+      </div>
+      <div class="quiz-feedback" id="quiz2-fb"></div>
+    </div>
+  </section>
+
+  <!-- ===== Slide 9: 准确率陷阱 ===== -->
+  <section class="slide" id="slide9">
+    <div class="section-title"><span class="num orange">9</span> 准确率陷阱与基线模型</div>
+    <div class="section-subtitle">99% 的准确率也可能是一个"傻瓜模型"</div>
+
+    <div class="content-block">
+      <h3>极端不平衡的数据</h3>
+      <p>假设某电商平台有 100,000 个客户，其中只有 100 个是高价值客户（占比 <strong>0.1%</strong>）。如果你写一个"傻瓜模型"——对所有人都预测为"低价值"——那么：</p>
+      <div class="formula-box">准确率 = 99,900 / 100,000 = 99.9%</div>
+      <p style="text-align:center;margin-top:10px;">准确率高得惊人！但这个模型<strong>一个高价值客户都没找到</strong>，召回率为 0，完全没用。</p>
+    </div>
+
+    <div class="callout danger">
+      <strong>基线模型 Baseline</strong>
+      在评估任何机器学习模型之前，都应该先建立一个"不用脑子的模型"作为对比基准。最常见的基线模型是<strong>多数类预测器</strong>——永远猜最多的那一类。如果你的模型连基线都打不过，那它就是来搞笑的。
+    </div>
+
+    <div class="content-block">
+      <h3>什么样的指标组合才算好模型？</h3>
+      <table class="data-table">
+        <thead>
+          <tr><th>模型</th><th>准确率</th><th>精确率</th><th>召回率</th><th>F1</th><th>综合评价</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>傻瓜基线（全猜低价值）</td><td class="highlight">99.9%</td><td>—</td><td style="color:var(--red);">0%</td><td>—</td><td style="color:var(--red);">❌ 没用</td></tr>
+          <tr><td>瞎猜模型（随机猜）</td><td>~50%</td><td>~0.1%</td><td>~50%</td><td>~0.2%</td><td style="color:var(--red);">❌ 比不猜还差</td></tr>
+          <tr><td>我们的决策树</td><td>98.2%</td><td style="color:var(--green);">85%</td><td style="color:var(--green);">72%</td><td style="color:var(--green);">78%</td><td style="color:var(--green);">✅ 有效</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ===== Slide 10: 实验：客户价值分类 ===== -->
+  <section class="slide" id="slide10">
+    <div class="section-title"><span class="num purple">10</span> 实验：客户价值分类</div>
+    <div class="section-subtitle">从头到尾，完整走一遍分类建模的流程</div>
+
+    <div class="content-block">
+      <h3>实验目标</h3>
+      <p>使用模拟的电商客户数据，训练一棵决策树来识别"高价值客户"，并与基线模型做对比。</p>
+    </div>
+
+    <div class="flow-chart">
+      <div class="flow-step" style="background:var(--blue-light);color:var(--blue);">① 构造标签<br><small>定义什么是"高价值"</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--green-light);color:var(--green);">② 数据划分<br><small>70%训练 / 30%测试</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--purple-light);color:var(--purple);">③ 基线对比<br><small>多数类预测器</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--orange-light);color:var(--orange);">④ 决策树训练<br><small>max_depth=5</small></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step" style="background:var(--red-light);color:var(--red);">⑤ 评估+分析<br><small>混淆矩阵+重要性</small></div>
+    </div>
+
+    <div class="content-block" style="margin-top:24px;">
+      <h3>模拟数据集（前10条）</h3>
+      <table class="data-table">
+        <thead>
+          <tr><th>客户ID</th><th>月消费(元)</th><th>购买次数</th><th>注册天数</th><th>最近购买(天)</th><th>标签</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>001</td><td>680</td><td>12</td><td>420</td><td>3</td><td><span class="tag green">高价值</span></td></tr>
+          <tr><td>002</td><td>120</td><td>2</td><td>30</td><td>45</td><td><span class="tag orange">低价值</span></td></tr>
+          <tr><td>003</td><td>890</td><td>25</td><td>600</td><td>1</td><td><span class="tag green">高价值</span></td></tr>
+          <tr><td>004</td><td>350</td><td>5</td><td>180</td><td>12</td><td><span class="tag orange">低价值</span></td></tr>
+          <tr><td>005</td><td>2100</td><td>40</td><td>900</td><td>2</td><td><span class="tag green">高价值</span></td></tr>
+          <tr><td>006</td><td>80</td><td>1</td><td>15</td><td>60</td><td><span class="tag orange">低价值</span></td></tr>
+          <tr><td>007</td><td>560</td><td>8</td><td>365</td><td>8</td><td><span class="tag green">高价值</span></td></tr>
+          <tr><td>008</td><td>200</td><td>3</td><td>90</td><td>30</td><td><span class="tag orange">低价值</span></td></tr>
+          <tr><td>009</td><td>1500</td><td>32</td><td>720</td><td>5</td><td><span class="tag green">高价值</span></td></tr>
+          <tr><td>010</td><td>45</td><td>0</td><td>5</td><td>—</td><td><span class="tag orange">低价值</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout success">
+      <strong>标签构造规则</strong>
+      高价值客户定义为：月消费 ≥ 400元 <strong>且</strong> 购买次数 ≥ 6次 <strong>且</strong> 最近购买 ≤ 15天前。这个规则是我们自己定义的"正确答案"，现实项目中通常由业务专家来设定。
+    </div>
+  </section>
+
+  <!-- ===== Slide 11: 实验结果分析 ===== -->
+  <section class="slide" id="slide11">
+    <div class="section-title"><span class="num purple">11</span> 实验结果分析</div>
+    <div class="section-subtitle">从混淆矩阵到特征重要性，解读模型学到了什么</div>
+
+    <div class="content-block">
+      <h3>决策树 vs 基线模型 — 混淆矩阵对比</h3>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px;">
+      <div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);">
+        <h4 style="text-align:center;margin-bottom:12px;color:var(--red);">❌ 基线模型（全猜低价值）</h4>
+        <table class="data-table">
+          <tr><th></th><th>预测高</th><th>预测低</th></tr>
+          <tr><td><strong>实际高</strong></td><td style="color:var(--red);">0 (TP)</td><td style="color:var(--red);">50 (FN)</td></tr>
+          <tr><td><strong>实际低</strong></td><td style="color:var(--green);">0 (FP)</td><td style="color:var(--green);">950 (TN)</td></tr>
+        </table>
+        <p style="text-align:center;margin-top:10px;font-size:14px;color:var(--gray-600);">召回率 = 0%，F1 = 无意义</p>
+      </div>
+      <div style="background:#fff;border-radius:14px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);">
+        <h4 style="text-align:center;margin-bottom:12px;color:var(--green);">✅ 决策树（max_depth=5）</h4>
+        <table class="data-table">
+          <tr><th></th><th>预测高</th><th>预测低</th></tr>
+          <tr><td><strong>实际高</strong></td><td style="color:var(--green);">42 (TP)</td><td style="color:var(--red);">8 (FN)</td></tr>
+          <tr><td><strong>实际低</strong></td><td style="color:var(--red);">6 (FP)</td><td style="color:var(--green);">944 (TN)</td></tr>
+        </table>
+        <p style="text-align:center;margin-top:10px;font-size:14px;color:var(--gray-600);">精确率=87.5% · 召回率=84% · F1=85.7%</p>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>特征重要性分析</h3>
+      <p>决策树训练完成后，我们可以知道哪些特征对分类判断<strong>贡献最大</strong>：</p>
+      <table class="data-table">
+        <thead><tr><th>特征</th><th>重要性</th><th>解读</th></tr></thead>
+        <tbody>
+          <tr><td>月消费金额</td><td style="font-weight:700;color:var(--blue);">0.45</td><td>最重要的判断依据，高消费者更可能是高价值客户</td></tr>
+          <tr><td>购买次数</td><td style="font-weight:700;color:var(--blue);">0.28</td><td>频繁购买是忠诚度的重要信号</td></tr>
+          <tr><td>最近购买距今</td><td style="font-weight:700;color:var(--blue);">0.18</td><td>刚买过的人更活跃，更可能再次购买</td></tr>
+          <tr><td>注册天数</td><td style="font-weight:700;color:var(--gray-600);">0.09</td><td>老客户不一定是高价值客户，贡献较小</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout info">
+      <strong>误判案例分析</strong>
+      被误判的 8 个 FN（漏掉的高价值客户）：他们的月消费在 400-500 元之间，购买次数 6-8 次，处于临界区域。这提示我们可能需要调整阈值或增加更多特征（如客单价、商品品类偏好等）来提高识别能力。
+    </div>
+  </section>
+
+  <!-- ===== Slide 12: 过拟合与调参 ===== -->
+  <section class="slide" id="slide12">
+    <div class="section-title"><span class="num red">12</span> 过拟合与调参</div>
+    <div class="section-subtitle">树长得太大未必是好事——掌握"剪枝"的艺术</div>
+
+    <div class="img-container">
+      <img src="images/overfitting_underfitting.png" alt="过拟合与欠拟合对比图" loading="lazy">
+      <div class="caption">图：欠拟合、良好拟合、过拟合的对比——找到"刚刚好"的那个点</div>
+    </div>
+
+    <div class="card-row">
+      <div class="card" style="border-left:4px solid var(--orange);">
+        <h4>欠拟合 Underfitting</h4>
+        <p>模型<strong>太简单</strong>，连训练数据中的基本规律都没学到。在训练集和测试集上表现都很差。</p>
+        <p style="font-size:13px;color:var(--gray-600);">原因：树太浅、特征太少、停止条件太严格。</p>
+        <p style="font-size:13px;color:var(--gray-600);">💊 解决：增加树的深度、添加更多特征。</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--green);">
+        <h4>良好拟合 Good Fit</h4>
+        <p>模型<strong>恰到好处</strong>，学到了数据中的真实规律，同时忽略了无关的噪音。在训练集和测试集上都表现良好。</p>
+        <p style="font-size:13px;color:var(--gray-600);">🎯 这是我们追求的目标。</p>
+      </div>
+      <div class="card" style="border-left:4px solid var(--red);">
+        <h4>过拟合 Overfitting</h4>
+        <p>模型<strong>太复杂</strong>，不仅学了规律，还记住了训练数据中的每一个噪音和异常点。训练集表现极好，但测试集大幅下降。</p>
+        <p style="font-size:13px;color:var(--gray-600);">原因：树太深、叶子节点太少样本、没有剪枝。</p>
+        <p style="font-size:13px;color:var(--gray-600);">💊 解决：预剪枝、后剪枝（CCP）、交叉验证。</p>
+      </div>
+    </div>
+
+    <div class="content-block">
+      <h3>两种"剪枝"策略</h3>
+      <table class="data-table">
+        <thead><tr><th>策略</th><th>原理</th><th>常用方法</th></tr></thead>
+        <tbody>
+          <tr><td><strong>预剪枝 Pre-pruning</strong></td><td>在树生长过程中就提前阻止它长太深</td><td>限制最大深度（max_depth）、限制最小分裂样本数（min_samples_split）、限制最小叶节点样本数（min_samples_leaf）</td></tr>
+          <tr><td><strong>后剪枝 Post-pruning</strong></td><td>先让树充分生长，再从下往上剪掉没用的分支</td><td>CCP（代价复杂度剪枝）：对每个分支计算"留着它带来的精度提升 vs 复杂度代价"，性价比低的就剪掉</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout warning">
+      <strong>交叉验证 Cross-Validation</strong>
+      把训练数据再分成 K 份，每次用 K-1 份训练、1 份验证，轮流 K 次。取平均表现来选择最佳的超参数（如 max_depth）。这样能更稳定地评估模型，避免因为一次划分的巧合而选错参数。
+    </div>
+  </section>
+
+  <!-- ===== Slide 13: 课程总结 ===== -->
+  <section class="slide" id="slide13">
+    <div class="section-title"><span class="num red">🏁</span> 课程总结</div>
+    <div class="section-subtitle">回顾我们这80分钟学到了什么</div>
+
+    <div class="content-block">
+      <h3>知识地图</h3>
+    </div>
+
+    <div style="background:#fff;border-radius:14px;padding:28px;box-shadow:0 1px 4px rgba(0,0,0,0.06);border:1px solid var(--gray-200);margin-bottom:20px;">
+      <div style="font-size:var(--font-md);line-height:2.2;">
+        <p><strong>📋 分类问题</strong> → 四要素（特征/标签/训练集/测试集）→ 训练集和测试集必须分离</p>
+        <p style="margin-left:20px;">↳ <strong>🌳 决策树</strong> → IF-THEN 规则 → 分裂标准（信息增益/Gini）→ 递归构建 + 停止条件</p>
+        <p style="margin-left:40px;">↳ <strong>📊 模型评估</strong> → 混淆矩阵（TP/TN/FP/FN）→ 准确率/精确率/召回率/F1 → 准确率陷阱</p>
+        <p style="margin-left:60px;">↳ <strong>🧪 实验验证</strong> → 标签构造 → 训练 → 评估 → 特征重要性 → 误判分析</p>
+        <p style="margin-left:80px;">↳ <strong>🔍 进阶调优</strong> → 过拟合 vs 欠拟合 → 预剪枝 & 后剪枝 → 交叉验证</p>
+      </div>
+    </div>
+
+    <div class="callout success">
+      <strong>三个核心收获</strong>
+      <p style="margin-top:8px;">1. 分类就是用数据教机器做判断，训练集和测试集必须分开，就像平时作业和期末考试要不同。</p>
+      <p>2. 决策树用一连串的 IF-THEN 规则来分类，它最大的优点是<strong>可解释</strong>——你能清楚说出为什么做出某个判断。</p>
+      <p>3. 评价模型不能只看准确率。精确率和召回率分别衡量"说对了吗"和"找全了吗"。好的模型要在这两者之间找到平衡。</p>
+    </div>
+
+    <div class="quiz-block">
+      <h3>🧠 终极挑战</h3>
+      <div class="quiz-question">以下哪一项是"决策树"最突出的优点？</div>
+      <div class="quiz-options" id="quiz3">
+        <div class="quiz-option" onclick="checkQuiz('quiz3', this, false)">A. 在所有数据集上准确率都是最高的</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz3', this, false)">B. 训练速度是所有算法中最快的</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz3', this, true)">C. 可解释性强，能清楚展示分类的决策过程</div>
+        <div class="quiz-option" onclick="checkQuiz('quiz3', this, false)">D. 不需要任何数据预处理就能使用</div>
+      </div>
+      <div class="quiz-feedback" id="quiz3-fb"></div>
+    </div>
+
+    <div class="callout info" style="text-align:center;">
+      <strong>🎉 恭喜完成本次课程！</strong><br>
+      你现在已经理解了机器学习中分类问题的核心概念，知道了决策树如何工作，以及如何科学地评估一个模型。感兴趣的话，可以继续探索：随机森林、支持向量机（SVM）、神经网络等更高级的分类算法。
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ===== 幻灯片导航 =====
+const totalSlides = 14;
+const slideIds = [];
+for (let i = 0; i < totalSlides; i++) slideIds.push('slide' + i);
+
+function goToSlide(index) {
+  // 隐藏所有幻灯片
+  slideIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.remove('active');
+  });
+  // 显示目标幻灯片
+  const target = document.getElementById('slide' + index);
+  if (target) target.classList.add('active');
+  // 更新侧边栏
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.remove('active');
+    if (parseInt(item.dataset.slide) === index) item.classList.add('active');
+  });
+  // 更新进度条
+  document.getElementById('progressFill').style.width = (index / (totalSlides - 1) * 100) + '%';
+  // 滚动到顶部
+  document.getElementById('mainContent').scrollTop = 0;
+  // 存储当前幻灯片
+  currentSlide = index;
+}
+
+let currentSlide = 0;
+
+// 侧边栏点击
+document.querySelectorAll('.nav-item').forEach(item => {
+  item.addEventListener('click', function() {
+    goToSlide(parseInt(this.dataset.slide));
+  });
+});
+
+// 键盘导航
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+    e.preventDefault();
+    if (currentSlide < totalSlides - 1) goToSlide(currentSlide + 1);
+  } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+    e.preventDefault();
+    if (currentSlide > 0) goToSlide(currentSlide - 1);
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    goToSlide(0);
+  } else if (e.key === 'End') {
+    e.preventDefault();
+    goToSlide(totalSlides - 1);
+  }
+});
+
+// 在每张幻灯片底部添加导航按钮
+slideIds.forEach((id, idx) => {
+  if (idx === 0) return; // 封面不添加
+  const slide = document.getElementById(id);
+  if (!slide) return;
+  const nav = document.createElement('div');
+  nav.className = 'bottom-nav';
+  nav.innerHTML = `
+    <button class="btn-prev" onclick="goToSlide(${idx - 1})">← 上一页</button>
+    <span style="font-size:14px;color:var(--gray-600);align-self:center;">${idx} / ${totalSlides - 1}</span>
+    <button class="btn-next" onclick="goToSlide(${idx + 1})">${idx < totalSlides - 1 ? '下一页 →' : '回到封面 🏠'}</button>
+  `;
+  slide.appendChild(nav);
+});
+
+// ===== 小测验 =====
+function checkQuiz(quizId, optionEl, isCorrect) {
+  const quiz = document.getElementById(quizId);
+  const fb = document.getElementById(quizId + '-fb');
+  // 清除之前的状态
+  quiz.querySelectorAll('.quiz-option').forEach(opt => {
+    opt.classList.remove('correct', 'wrong');
+  });
+  // 标记
+  if (isCorrect) {
+    optionEl.classList.add('correct');
+    fb.className = 'quiz-feedback show';
+    fb.style.background = 'var(--green-light)';
+    fb.style.color = '#166534';
+    fb.textContent = '✅ 回答正确！' + (quizId === 'quiz1' ? '训练集用来学习规律，测试集用来检验模型在没见过的数据上的表现——这才是真正的"学会"。' : quizId === 'quiz2' ? '在疫情防控中，漏掉任何一个感染者都可能导致大规模传播，所以召回率（不漏掉）是最关键的指标。' : '决策树最大的优势就是可解释性——你可以清楚地追溯每一步决策，知道模型为什么做出这个判断。');
+  } else {
+    optionEl.classList.add('wrong');
+    fb.className = 'quiz-feedback show';
+    fb.style.background = 'var(--red-light)';
+    fb.style.color = '#991b1b';
+    fb.textContent = '❌ 再想想哦。' + (quizId === 'quiz1' ? '提示：回忆一下"平时作业"和"期末考试"的比喻。' : quizId === 'quiz2' ? '提示：在疫情防控中，漏掉一个感染者（假负例 FN）的代价是什么？' : '提示：想想决策树和其他算法的核心区别是什么？');
+  }
+}
+
+// ===== 互动决策树 =====
+let treeState = {};
+
+function treeStep(step, answer) {
+  if (step === 1) {
+    treeState.q1 = answer;
+    document.getElementById('treeStep1').style.display = 'none';
+    const step2 = document.getElementById('treeStep2');
+    step2.style.display = 'block';
+    const q2 = document.getElementById('treeQ2');
+    if (answer === 'yes') {
+      q2.textContent = '第二步：该客户最近 30 天内是否有过购买？';
+    } else {
+      q2.textContent = '第二步：该客户的注册时长是否超过 1 年（365天）？';
+    }
+  } else if (step === 2) {
+    treeState.q2 = answer;
+    document.getElementById('treeStep2').style.display = 'none';
+    const result = document.getElementById('treeResult');
+    result.classList.add('show');
+    // 决策逻辑
+    let isHigh = false;
+    if (treeState.q1 === 'yes' && treeState.q2 === 'yes') {
+      isHigh = true;
+    } else if (treeState.q1 === 'yes' && treeState.q2 === 'no') {
+      isHigh = false;
+    } else if (treeState.q1 === 'no' && treeState.q2 === 'yes') {
+      isHigh = true;
+    } else {
+      isHigh = false;
+    }
+    if (isHigh) {
+      result.className = 'tree-result high show';
+      result.textContent = '🌟 预测结果：高价值客户！推荐发放专属优惠券，重点维护。';
+    } else {
+      result.className = 'tree-result low show';
+      result.textContent = '📭 预测结果：低价值客户。建议通过促销活动激活，观察后续行为。';
+    }
+    document.getElementById('treeReset').style.display = 'block';
+  }
+}
+
+function resetTree() {
+  treeState = {};
+  document.getElementById('treeStep1').style.display = 'block';
+  document.getElementById('treeStep2').style.display = 'none';
+  document.getElementById('treeResult').className = 'tree-result';
+  document.getElementById('treeResult').textContent = '';
+  document.getElementById('treeReset').style.display = 'none';
+  document.querySelectorAll('.tree-option').forEach(opt => opt.classList.remove('selected'));
+}
+
+// 标记当前选中的选项
+document.querySelectorAll('.tree-option').forEach(opt => {
+  opt.addEventListener('click', function() {
+    this.parentElement.querySelectorAll('.tree-option').forEach(o => o.classList.remove('selected'));
+    this.classList.add('selected');
+  });
+});
+
+// ===== 初始状态 =====
+goToSlide(0);
+</script>
+
+</body>
+</html>
